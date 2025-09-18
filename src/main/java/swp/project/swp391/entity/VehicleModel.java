@@ -64,6 +64,4 @@ public class VehicleModel {
     // Mối quan hệ với Vehicle (One-to-Many)
     @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Vehicle> vehicles;
-
-
 }

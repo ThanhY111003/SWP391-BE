@@ -20,11 +20,6 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // XÓA các trường sau vì chúng đã được chuyển sang bảng 'users'
-    // private String fullName;
-    // private String phoneNumber;
-    // private String email;
-
     @Column(name = "id_number", unique = true)
     private String idNumber;
 
@@ -44,10 +39,6 @@ public class Customer {
     @Column(name = "income_level")
     @Enumerated(EnumType.STRING)
     private IncomeLevel incomeLevel;
-
-    // XÓA trường isActive vì trạng thái này thuộc về bảng 'users'
-    // @Column(name = "is_active")
-    // private Boolean isActive = true;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -22,7 +22,8 @@ public enum ErrorHandler {
     PHONE_NUMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Số điện thoại đã tồn tại"),
     INVALID_GENDER(HttpStatus.BAD_REQUEST, 400, "Giới tính không hợp lệ."),
     INVALID_INCOME_LEVEL(HttpStatus.BAD_REQUEST, 400, "Mức thu nhập không hợp lệ."),
-
+    CUSTOMER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy khách hàng"),
+    ACCOUNT_BLOCKED(HttpStatus.FORBIDDEN, 403, "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ quản trị viên để biết thêm chi tiết."),
     // Role Errors
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy vai trò"),
 
@@ -30,7 +31,7 @@ public enum ErrorHandler {
     INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, 400, "Định dạng ngày sinh không hợp lệ. Vui lòng sử dụng định dạng yyyy-MM-dd"),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, "Invalid request"),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, 403, "Bạn không có quyền truy cập vào tài nguyên này"),
-
+    FORBIDDEN(HttpStatus.FORBIDDEN, 403, "Hành động bị cấm"),
     REQUEST_OTP_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, 429, "Bạn đã yêu cầu gửi lại mã OTP quá sớm. Vui lòng thử lại sau.");
 
     private final HttpStatus status;

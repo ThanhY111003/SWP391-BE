@@ -1,4 +1,4 @@
-package swp.project.swp391.request;
+package swp.project.swp391.request.auth;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package swp.project.swp391.response;
+package swp.project.swp391.response.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

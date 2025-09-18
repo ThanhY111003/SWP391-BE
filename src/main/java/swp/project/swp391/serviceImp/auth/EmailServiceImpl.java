@@ -1,4 +1,4 @@
-package swp.project.swp391.serviceImp;
+package swp.project.swp391.serviceImp.auth;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -8,7 +8,7 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import swp.project.swp391.service.EmailService;
+import swp.project.swp391.service.auth.EmailService;
 
 @Service
 @RequiredArgsConstructor

@@ -2,7 +2,7 @@ package swp.project.swp391.validator;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import swp.project.swp391.request.RegisterRequest;
+import swp.project.swp391.request.auth.RegisterRequest;
 
 public class PasswordMatchesValidator implements ConstraintValidator<PasswordMatches, Object> {
 

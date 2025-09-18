@@ -1,4 +1,4 @@
-package swp.project.swp391.request;
+package swp.project.swp391.request.auth;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;

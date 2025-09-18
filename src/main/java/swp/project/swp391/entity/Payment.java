@@ -18,9 +18,6 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "payment_code", unique = true, nullable = false)
-    private String paymentCode;
-
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;
 

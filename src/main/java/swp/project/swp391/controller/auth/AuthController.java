@@ -1,4 +1,4 @@
-package swp.project.swp391.controller;
+package swp.project.swp391.controller.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,11 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import swp.project.swp391.exception.BaseException;
-import swp.project.swp391.request.*;
-import swp.project.swp391.response.LoginResponse;
-import swp.project.swp391.service.AuthService;
-import swp.project.swp391.response.RefreshTokenResponse;
-import swp.project.swp391.response.RegisterResponse; // Thêm import này
+import swp.project.swp391.request.auth.*;
+import swp.project.swp391.response.auth.LoginResponse;
+import swp.project.swp391.service.auth.AuthService;
+import swp.project.swp391.response.auth.RefreshTokenResponse;
+import swp.project.swp391.response.auth.RegisterResponse; // Thêm import này
 
 import java.util.Map;
 
@@ -26,14 +26,11 @@ public class AuthController {
 
     @Operation(summary = "Đăng ký tài khoản", description = "Tạo mới một tài khoản người dùng")
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest request) {
-        try {
-            RegisterResponse response = authService.register(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (BaseException e) {
-            return ResponseEntity.status(e.getErrorHandler().getStatus()).body(Map.of("message", e.getMessage()));
-        }
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+        RegisterResponse response = authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 
     @Operation(summary = "Đăng nhập", description = "Xác thực người dùng và trả về JWT token")
     @PostMapping("/login")

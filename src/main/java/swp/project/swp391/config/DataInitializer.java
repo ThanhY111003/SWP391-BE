@@ -12,15 +12,12 @@ import swp.project.swp391.repository.PermissionRepository;
 import swp.project.swp391.repository.RoleRepository;
 import swp.project.swp391.repository.UserRepository;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class DataInitializer implements CommandLineRunner {
-    // Thêm các dependency này
+    public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
@@ -28,163 +25,167 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     @Transactional
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         initializeRolesAndPermissions();
     }
 
-    private void initializeRolesAndPermissions() {
-        // Tạo permissions cơ bản
+    @Transactional
+    protected void initializeRolesAndPermissions() {
+        // 1) Tạo permissions (idempotent)
         createPermissionsIfNotExist();
-        
-        // Tạo roles cơ bản
-        createRolesIfNotExist();
 
-        // Tạo user admin nếu chưa tồn tại
+        // 2) Tạo roles (idempotent)
+        Role adminRole         = upsertRoleIfNeeded("ADMIN", "Administrator", "Full system access");
+        Role evmStaffRole      = upsertRoleIfNeeded("EVM_STAFF", "EVM Staff", "Electric Vehicle Manufacturer Staff");
+        Role dealerManagerRole = upsertRoleIfNeeded("DEALER_MANAGER", "Dealer Manager", "Dealer Manager");
+        Role dealerStaffRole   = upsertRoleIfNeeded("DEALER_STAFF", "Dealer Staff", "Dealer Staff");
+        Role userRole          = upsertRoleIfNeeded("USER", "User", "Basic user");
+
+        // 3) Gán permission theo chiến lược *.any
+        // Helper: lấy Permission theo tên
+        Map<String, Permission> pMap = permissionRepository.findAll().stream()
+                .collect(Collectors.toMap(Permission::getName, p -> p));
+
+        // ADMIN: tất cả
+        adminRole.setPermissions(new HashSet<>(pMap.values()));
+        roleRepository.save(adminRole);
+
+        // DEALER_MANAGER: có thể đọc/sửa mọi customer + đọc report + thao tác order
+        setRolePermissionsByNames(dealerManagerRole, pMap, List.of(
+                "customer.read.any",
+                "customer.update.any",
+                "order.create","order.read","order.update",
+                "report.read","report.export"
+        ));
+
+        // DEALER_STAFF: có thể đọc (any) customer để phục vụ DV, nhưng KHÔNG update mọi customer
+        // (tuỳ nghiệp vụ; nếu muốn cho phép sửa mọi customer, thêm "customer.update.any")
+        setRolePermissionsByNames(dealerStaffRole, pMap, List.of(
+                "customer.read.any",
+                "order.create","order.read","order.update"
+        ));
+
+        // EVM_STAFF: thao tác vehicle/order/dealer/report, KHÔNG đụng customer.any
+        setRolePermissionsByNames(evmStaffRole, pMap, List.of(
+                "vehicle.create","vehicle.read","vehicle.update","vehicle.delete",
+                "order.create","order.read","order.update","order.delete",
+                "dealer.create","dealer.read","dealer.update","dealer.delete",
+                "report.read","report.export"
+        ));
+
+        // USER: KHÔNG có customer.read.any / customer.update.any
+        // user chỉ xem/sửa chính mình thông qua nhánh "owner" trong service
+        setRolePermissionsByNames(userRole, pMap, List.of(
+                // ví dụ cho user: chỉ quyền với order cá nhân (tùy nghiệp vụ)
+                "order.create","order.read","order.update"
+        ));
+
+        // 4) Tạo admin mặc định nếu chưa có
         createAdminUserIfNotExist();
     }
 
+    /** Tạo tất cả permission cần thiết (idempotent) */
     private void createPermissionsIfNotExist() {
-        List<String[]> permissions = List.of(
-                new String[]{"user", "create", "Tạo người dùng", "Thêm mới người dùng"},
-                new String[]{"user", "read", "Xem người dùng", "Xem thông tin người dùng"},
-                new String[]{"user", "update", "Cập nhật người dùng", "Sửa thông tin người dùng"},
-                new String[]{"user", "delete", "Xóa người dùng", "Xóa người dùng"},
+        // Core CRUD theo resource
+        String[][] base = new String[][]{
+                {"user","create","Tạo người dùng","Thêm mới người dùng"},
+                {"user","read","Xem người dùng","Xem thông tin người dùng"},
+                {"user","update","Cập nhật người dùng","Sửa thông tin người dùng"},
+                {"user","delete","Xóa người dùng","Xóa người dùng"},
+                {"user","inactive","Inactive user","Vô hiệu hóa tài khoản người dùng"},
+                {"user","reactivate","Reactivate user","Kích hoạt lại tài khoản người dùng"},
 
-                new String[]{"customer", "create", "Tạo khách hàng", "Thêm mới khách hàng"},
-                new String[]{"customer", "read", "Xem khách hàng", "Xem thông tin khách hàng"},
-                new String[]{"customer", "update", "Cập nhật khách hàng", "Sửa thông tin khách hàng"},
-                new String[]{"customer", "delete", "Xóa khách hàng", "Xóa khách hàng"},
+                {"vehicle","create","Tạo xe","Thêm mới xe"},
+                {"vehicle","read","Xem xe","Xem thông tin xe"},
+                {"vehicle","update","Cập nhật xe","Sửa thông tin xe"},
+                {"vehicle","delete","Xóa xe","Xóa xe"},
 
-                new String[]{"vehicle", "create", "Tạo xe", "Thêm mới xe"},
-                new String[]{"vehicle", "read", "Xem xe", "Xem thông tin xe"},
-                new String[]{"vehicle", "update", "Cập nhật xe", "Sửa thông tin xe"},
-                new String[]{"vehicle", "delete", "Xóa xe", "Xóa xe"},
+                {"order","create","Tạo đơn hàng","Thêm mới đơn hàng"},
+                {"order","read","Xem đơn hàng","Xem thông tin đơn hàng"},
+                {"order","update","Cập nhật đơn hàng","Sửa thông tin đơn hàng"},
+                {"order","delete","Xóa đơn hàng","Xóa đơn hàng"},
 
-                new String[]{"order", "create", "Tạo đơn hàng", "Thêm mới đơn hàng"},
-                new String[]{"order", "read", "Xem đơn hàng", "Xem thông tin đơn hàng"},
-                new String[]{"order", "update", "Cập nhật đơn hàng", "Sửa thông tin đơn hàng"},
-                new String[]{"order", "delete", "Xóa đơn hàng", "Xóa đơn hàng"},
+                {"dealer","create","Tạo đại lý","Thêm mới đại lý"},
+                {"dealer","read","Xem đại lý","Xem thông tin đại lý"},
+                {"dealer","update","Cập nhật đại lý","Sửa thông tin đại lý"},
+                {"dealer","delete","Xóa đại lý","Xóa đại lý"},
 
-                new String[]{"dealer", "create", "Tạo đại lý", "Thêm mới đại lý"},
-                new String[]{"dealer", "read", "Xem đại lý", "Xem thông tin đại lý"},
-                new String[]{"dealer", "update", "Cập nhật đại lý", "Sửa thông tin đại lý"},
-                new String[]{"dealer", "delete", "Xóa đại lý", "Xóa đại lý"},
+                {"report","read","Xem báo cáo","Xem các báo cáo"},
+                {"report","export","Xuất báo cáo","Xuất báo cáo ra file"}
+        };
 
-                new String[]{"report", "read", "Xem báo cáo", "Xem các báo cáo"},
-                new String[]{"report", "export", "Xuất báo cáo", "Xuất báo cáo ra file"}
-        );
+        // CUSTOMER: tách quyền mức any
+        // (nếu muốn siêu chi tiết hơn nữa có thể bổ sung *.self, nhưng nhánh self ta xử lý ở service bằng owner-check)
+        String[] customerAny = new String[]{
+                "customer.read.any",   // Xem bất kỳ customer
+                "customer.update.any", // Sửa bất kỳ customer
+                "customer.delete.any"  // (tuỳ nghiệp vụ có dùng hay không)
+        };
 
-        for (String[] p : permissions) {
+        // Lưu base
+        for (String[] p : base) {
             String resource = p[0], action = p[1];
-            String displayName = p[2], description = p[3];
-            String name = resource + "." + action;
-
-            createPermissionIfNotExist(name, displayName, description, resource, action);
+            String display  = p[2], desc = p[3];
+            String name     = resource + "." + action;
+            createPermissionIfNotExist(name, display, desc, resource, action);
+        }
+        // Lưu customer.any*
+        for (String name : customerAny) {
+            createPermissionIfNotExist(
+                    name,
+                    "Quyền " + name,
+                    "Quyền " + name + " trên mọi khách hàng",
+                    "customer",
+                    name.substring("customer.".length()) // e.g. "read.any"
+            );
         }
     }
-
 
     private Permission createPermissionIfNotExist(String name, String displayName, String description, String resource, String action) {
-        return permissionRepository.findByName(name)
-                .orElseGet(() -> {
-                    Permission permission = Permission.builder()
-                            .name(name)
-                            .displayName(displayName)
-                            .description(description)
-                            .resource(resource)
-                            .action(action)
-                            .isActive(true)
-                            .build();
-                    return permissionRepository.save(permission);
-                });
+        return permissionRepository.findByName(name).orElseGet(() -> {
+            Permission permission = Permission.builder()
+                    .name(name)
+                    .displayName(displayName)
+                    .description(description)
+                    .resource(resource)
+                    .action(action)
+                    .isActive(true)
+                    .build();
+            return permissionRepository.save(permission);
+        });
     }
 
-    private void createRolesIfNotExist() {
-        // Tạo ADMIN role
-        Role adminRole = roleRepository.findByName("ADMIN")
-                .orElse(Role.builder()
-                        .name("ADMIN")
-                        .displayName("Administrator")
-                        .description("Full system access")
-                        .isActive(true)
-                        .build());
-        
-        if (adminRole.getId() == null) {
-            Set<Permission> allPermissions = new HashSet<>(permissionRepository.findAll());
-            adminRole.setPermissions(allPermissions);
-            roleRepository.save(adminRole);
-        }
+    private Role upsertRoleIfNeeded(String name, String displayName, String description) {
+        return roleRepository.findByName(name).orElseGet(() -> {
+            Role r = Role.builder()
+                    .name(name)
+                    .displayName(displayName)
+                    .description(description)
+                    .isActive(true)
+                    .build();
+            return roleRepository.save(r);
+        });
+    }
 
-        // Tạo EVM_STAFF role
-        Role evmStaffRole = roleRepository.findByName("EVM_STAFF")
-                .orElse(Role.builder()
-                        .name("EVM_STAFF")
-                        .displayName("EVM Staff")
-                        .description("Electric Vehicle Manufacturer Staff")
-                        .isActive(true)
-                        .build());
-        
-        if (evmStaffRole.getId() == null) {
-            Set<Permission> evmPermissions = new HashSet<>(permissionRepository.findByResourceIn(Arrays.asList("vehicle", "order", "dealer", "report")));
-            evmStaffRole.setPermissions(evmPermissions);
-            roleRepository.save(evmStaffRole);
-        }
-
-        // Tạo DEALER_MANAGER role
-        Role dealerManagerRole = roleRepository.findByName("DEALER_MANAGER")
-                .orElse(Role.builder()
-                        .name("DEALER_MANAGER")
-                        .displayName("Dealer Manager")
-                        .description("Dealer Manager")
-                        .isActive(true)
-                        .build());
-        
-        if (dealerManagerRole.getId() == null) {
-            Set<Permission> dealerManagerPermissions = new HashSet<>(permissionRepository.findByResourceIn(Arrays.asList("order", "customer", "report")));
-            dealerManagerRole.setPermissions(dealerManagerPermissions);
-            roleRepository.save(dealerManagerRole);
-        }
-
-        // Tạo DEALER_STAFF role
-        Role dealerStaffRole = roleRepository.findByName("DEALER_STAFF")
-                .orElse(Role.builder()
-                        .name("DEALER_STAFF")
-                        .displayName("Dealer Staff")
-                        .description("Dealer Staff")
-                        .isActive(true)
-                        .build());
-        
-        if (dealerStaffRole.getId() == null) {
-            Set<Permission> dealerStaffPermissions = new HashSet<>(permissionRepository.findByResourceIn(Arrays.asList("order", "customer")));
-            dealerStaffRole.setPermissions(dealerStaffPermissions);
-            roleRepository.save(dealerStaffRole);
-        }
-
-        // Tạo USER role (default)
-        Role userRole = roleRepository.findByName("USER")
-                .orElse(Role.builder()
-                        .name("USER")
-                        .displayName("User")
-                        .description("Basic user")
-                        .isActive(true)
-                        .build());
-        
-        if (userRole.getId() == null) {
-            Set<Permission> userPermissions = new HashSet<>(permissionRepository.findByResourceIn(Arrays.asList("order", "customer")));
-            userRole.setPermissions(userPermissions);
-            roleRepository.save(userRole);
-        }
+    private void setRolePermissionsByNames(Role role, Map<String, Permission> all, List<String> names) {
+        Set<Permission> perms = names.stream()
+                .map(n -> {
+                    Permission p = all.get(n);
+                    if (p == null) throw new IllegalStateException("Permission not found: " + n);
+                    return p;
+                })
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        role.setPermissions(perms);
+        roleRepository.save(role);
     }
 
     private void createAdminUserIfNotExist() {
-        // Kiểm tra xem đã có người dùng admin chưa để tránh tạo trùng lặp
         if (userRepository.findByUsername("admin").isEmpty()) {
             Role adminRole = roleRepository.findByName("ADMIN")
                     .orElseThrow(() -> new IllegalStateException("Vai trò ADMIN không được tìm thấy."));
-
             User adminUser = User.builder()
                     .username("admin")
-                    .password(passwordEncoder.encode("admin123")) // Mã hóa mật khẩu
+                    .password(passwordEncoder.encode("admin123"))
                     .email("admin@example.com")
                     .isVerified(true)
                     .roles(Set.of(adminRole))

@@ -1,11 +1,10 @@
-package swp.project.swp391.request;
+package swp.project.swp391.request.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 @Data
 @NoArgsConstructor

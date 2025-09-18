@@ -41,6 +41,9 @@ public class Vehicle {
     @Column(name = "warranty_end_date")
     private LocalDateTime warrantyEndDate;
 
+    @Column(nullable = false)
+    private String color;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 
@@ -54,11 +57,6 @@ public class Vehicle {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_model_id", nullable = false)
     private VehicleModel vehicleModel;
-
-    // Mối quan hệ với Color (Many-to-One)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "color_id", nullable = false)
-    private Color color;
 
     // Mối quan hệ với Inventory (One-to-Many)
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
