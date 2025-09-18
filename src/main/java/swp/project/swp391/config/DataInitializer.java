@@ -2,12 +2,15 @@ package swp.project.swp391.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import swp.project.swp391.entity.Permission;
 import swp.project.swp391.entity.Role;
+import swp.project.swp391.entity.User;
 import swp.project.swp391.repository.PermissionRepository;
 import swp.project.swp391.repository.RoleRepository;
+import swp.project.swp391.repository.UserRepository;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,7 +20,9 @@ import java.util.HashSet;
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
-
+    // Thêm các dependency này
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
 
@@ -33,6 +38,9 @@ public class DataInitializer implements CommandLineRunner {
         
         // Tạo roles cơ bản
         createRolesIfNotExist();
+
+        // Tạo user admin nếu chưa tồn tại
+        createAdminUserIfNotExist();
     }
 
     private void createPermissionsIfNotExist() {
@@ -165,6 +173,25 @@ public class DataInitializer implements CommandLineRunner {
             Set<Permission> userPermissions = new HashSet<>(permissionRepository.findByResourceIn(Arrays.asList("order", "customer")));
             userRole.setPermissions(userPermissions);
             roleRepository.save(userRole);
+        }
+    }
+
+    private void createAdminUserIfNotExist() {
+        // Kiểm tra xem đã có người dùng admin chưa để tránh tạo trùng lặp
+        if (userRepository.findByUsername("admin").isEmpty()) {
+            Role adminRole = roleRepository.findByName("ADMIN")
+                    .orElseThrow(() -> new IllegalStateException("Vai trò ADMIN không được tìm thấy."));
+
+            User adminUser = User.builder()
+                    .username("admin")
+                    .password(passwordEncoder.encode("admin123")) // Mã hóa mật khẩu
+                    .email("admin@example.com")
+                    .isVerified(true)
+                    .roles(Set.of(adminRole))
+                    .isActive(true)
+                    .build();
+            userRepository.save(adminUser);
+            System.out.println("Đã tạo người dùng Admin thành công.");
         }
     }
 }

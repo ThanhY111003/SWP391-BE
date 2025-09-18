@@ -10,6 +10,5 @@ import java.util.Optional;
 @Repository
 public interface PermissionRepository extends JpaRepository<Permission, Long> {
     Optional<Permission> findByName(String name);
-    Boolean existsByName(String name);
     List<Permission> findByResourceIn(List<String> resources);
 }

@@ -37,6 +37,8 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
+    private Boolean isVerified = false;
+
     @Column(name = "phone_number")
     private String phoneNumber;
 

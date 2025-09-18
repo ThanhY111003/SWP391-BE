@@ -11,4 +11,6 @@ public interface AuthService {
     RegisterResponse register(RegisterRequest request);
     LoginResponse login(LoginRequest request);
     RefreshTokenResponse refreshToken(RefreshTokenRequest request);
+    void verifyOtp(String otp);
+    void requestNewOtp(String email);
 }

@@ -12,5 +12,7 @@ import lombok.Builder;
 public class LoginResponse {
     private String token;
     private String refreshToken;
-    private String message; // Thêm trường message để trả về thông báo thành công
+    private String message;
+    private String roleName;
+    // Thêm trường message để trả về thông báo thành công
 }
