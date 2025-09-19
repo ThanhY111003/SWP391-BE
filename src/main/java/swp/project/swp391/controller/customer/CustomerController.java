@@ -18,7 +18,7 @@ public class CustomerController {
     private final CustomerService customerService;
 
     // ADMIN/OWNER: update theo id
-    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/update-profile-id", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CustomerProfileResponse> updateById(
             @PathVariable Long id,
             @Valid @RequestBody UpdateCustomerProfileRequest request
@@ -27,19 +27,19 @@ public class CustomerController {
     }
 
     // ADMIN/OWNER: get theo id
-    @GetMapping("/{id}")
+    @GetMapping("/view-profile/{id}")
     public ResponseEntity<CustomerProfileResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(customerService.getProfile(id));
     }
 
     // USER/ADMIN: get chính mình
-    @GetMapping("/me")
+    @GetMapping("/view-profile-me")
     public ResponseEntity<CustomerProfileResponse> getMe(@AuthenticationPrincipal User me) {
         return ResponseEntity.ok(customerService.getProfileByUserId(me.getId()));
     }
 
     // USER/ADMIN: update chính mình
-    @PutMapping(value = "/me", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/update-profile-me", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CustomerProfileResponse> updateMe(
             @AuthenticationPrincipal User me,
             @Valid @RequestBody UpdateCustomerProfileRequest request

@@ -57,29 +57,32 @@ public class CustomerServiceImpl implements CustomerService {
             throw new BaseException(ErrorHandler.ACCOUNT_BLOCKED);
         }
 
-        // update field
+        // update User fields
         if (request.getFullName() != null) target.setFullName(request.getFullName());
         if (request.getPhoneNumber() != null) target.setPhoneNumber(request.getPhoneNumber());
-        if (request.getAddress() != null) customer.setAddress(request.getAddress());
-        if (request.getOccupation() != null) customer.setOccupation(request.getOccupation());
-
+        if (request.getAddress() != null) target.setAddress(request.getAddress());
         if (request.getDateOfBirth() != null) {
-            customer.setDateOfBirth(LocalDate.parse(
-                    request.getDateOfBirth(), DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            target.setDateOfBirth(LocalDate.parse(
+                    request.getDateOfBirth(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd")
             ).atStartOfDay());
         }
         if (request.getGender() != null) {
-            customer.setGender(Customer.Gender.valueOf(request.getGender().toUpperCase()));
+            target.setGender(User.Gender.valueOf(request.getGender().toUpperCase()));
         }
+
+        // update Customer fields
+        if (request.getOccupation() != null) customer.setOccupation(request.getOccupation());
         if (request.getIncomeLevel() != null) {
             customer.setIncomeLevel(Customer.IncomeLevel.valueOf(request.getIncomeLevel().toUpperCase()));
         }
 
-        customerRepository.save(customer);
         userRepository.save(target);
+        customerRepository.save(customer);
 
         return CustomerProfileResponse.fromEntity(customer);
     }
+
 
     @Override
     public CustomerProfileResponse getProfile(Long customerId) {

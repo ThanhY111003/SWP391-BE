@@ -14,6 +14,7 @@ import swp.project.swp391.service.auth.AuthService;
 import swp.project.swp391.response.auth.RefreshTokenResponse;
 import swp.project.swp391.response.auth.RegisterResponse; // Thêm import này
 
+import java.security.Principal;
 import java.util.Map;
 
 @RestController
@@ -45,7 +46,7 @@ public class AuthController {
         // Giữ nguyên
         return ResponseEntity.ok(authService.refreshToken(request));
     }
-
+    @Operation(summary = "Xác minh OTP khi đăng ký")
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody VerifyOtpRequest request) {
         // Giữ nguyên
@@ -56,7 +57,7 @@ public class AuthController {
             return ResponseEntity.status(e.getErrorHandler().getStatus()).body(Map.of("message", e.getMessage()));
         }
     }
-
+    @Operation(summary = "gửi lại OTP khi đăng ký")
     @PostMapping("/request-otp")
     public ResponseEntity<?> requestNewOtp(@RequestBody RequestNewOtpRequest request) {
         // Giữ nguyên
@@ -66,5 +67,36 @@ public class AuthController {
         } catch (BaseException e) {
             return ResponseEntity.status(e.getErrorHandler().getStatus()).body(Map.of("message", e.getMessage()));
         }
+    }
+    @Operation(summary = "Quên mật khẩu - gửi OTP")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(Map.of("message", "OTP đặt lại mật khẩu đã được gửi về email."));
+    }
+
+    @Operation(summary = "Resend OTP quên mật khẩu")
+    @PostMapping("/forgot-password/resend-otp")
+    public ResponseEntity<?> resendForgotPasswordOtp(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.resendForgotPasswordOtp(request.getEmail());
+        return ResponseEntity.ok(Map.of("message", "OTP mới đã được gửi về email."));
+    }
+
+    @Operation(summary = "Đặt lại mật khẩu bằng OTP")
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(Map.of("message", "Mật khẩu đã được đặt lại thành công."));
+    }
+
+    // ================== CHANGE PASSWORD (Đang login) ==================
+
+    @Operation(summary = "Đổi mật khẩu (đang đăng nhập)")
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request,
+                                            Principal principal) {
+        // principal chứa username lấy từ JWT filter
+        authService.changePassword(principal.getName(), request);
+        return ResponseEntity.ok(Map.of("message", "Mật khẩu đã được thay đổi thành công."));
     }
 }

@@ -20,19 +20,7 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "id_number", unique = true)
-    private String idNumber;
-
-    @Column(name = "date_of_birth")
-    private LocalDateTime dateOfBirth;
-
-    @Column(columnDefinition = "TEXT")
-    private String address;
-
-    @Column(name = "gender")
-    @Enumerated(EnumType.STRING)
-    private Gender gender;
-
+    // Thông tin chuyên biệt cho khách hàng
     @Column(name = "occupation")
     private String occupation;
 
@@ -40,29 +28,34 @@ public class Customer {
     @Enumerated(EnumType.STRING)
     private IncomeLevel incomeLevel;
 
+    public enum IncomeLevel {
+        HIGH,
+        MEDIUM,
+        LOW
+    }
+
+    // ====== Audit ======
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Mối quan hệ với Order (One-to-Many)
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Order> orders;
-
-    // Mối quan hệ với TestDrive (One-to-Many)
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<TestDrive> testDrives;
-
-    // Mối quan hệ với Feedback (One-to-Many)
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Feedback> feedbacks;
-
-    // Sửa lại mối quan hệ: customer là bên sở hữu JoinColumn
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // ====== Quan hệ ======
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Order> orders;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<TestDrive> testDrives;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Feedback> feedbacks;
+
+    // ====== Lifecycle ======
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -72,16 +65,5 @@ public class Customer {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public enum Gender {
-        MALE,
-        FEMALE
-    }
-
-    public enum IncomeLevel {
-        HIGH,
-        MEDIUM,
-        LOW
     }
 }

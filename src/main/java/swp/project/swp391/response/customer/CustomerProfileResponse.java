@@ -25,11 +25,13 @@ public class CustomerProfileResponse {
                 .fullName(customer.getUser().getFullName())
                 .email(customer.getUser().getEmail())
                 .phoneNumber(customer.getUser().getPhoneNumber())
-                .address(customer.getAddress())
+                .address(customer.getUser().getAddress()) // moved sang User
                 .occupation(customer.getOccupation())
-                .gender(customer.getGender().name())
-                .incomeLevel(customer.getIncomeLevel().name())
-                .dateOfBirth(customer.getDateOfBirth().toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .gender(customer.getUser().getGender() != null ? customer.getUser().getGender().name() : null) // moved sang User
+                .incomeLevel(customer.getIncomeLevel() != null ? customer.getIncomeLevel().name() : null)
+                .dateOfBirth(customer.getUser().getDateOfBirth() != null
+                        ? customer.getUser().getDateOfBirth().toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                        : null)
                 .build();
     }
 }

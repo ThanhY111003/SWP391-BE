@@ -41,8 +41,10 @@ public class Vehicle {
     @Column(name = "warranty_end_date")
     private LocalDateTime warrantyEndDate;
 
-    @Column(nullable = false)
-    private String color;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_color_id", nullable = false)
+    private VehicleColor vehicleColor;
+
 
     @Column(name = "is_active")
     private Boolean isActive = true;
