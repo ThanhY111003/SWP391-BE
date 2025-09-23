@@ -47,8 +47,8 @@ import java.util.stream.Collectors;
                 .collect(Collectors.toMap(Permission::getName, p -> p));
 
         // ADMIN: tất cả
-        adminRole.setPermissions(new HashSet<>(pMap.values()));
-        roleRepository.save(adminRole);
+            adminRole.setPermissions(new HashSet<>(pMap.values()));
+            roleRepository.save(adminRole);
 
         // DEALER_MANAGER: có thể đọc/sửa mọi customer + đọc report + thao tác order
         setRolePermissionsByNames(dealerManagerRole, pMap, List.of(
@@ -115,20 +115,37 @@ import java.util.stream.Collectors;
         };
 
         // CUSTOMER: tách quyền mức any
-        // (nếu muốn siêu chi tiết hơn nữa có thể bổ sung *.self, nhưng nhánh self ta xử lý ở service bằng owner-check)
         String[] customerAny = new String[]{
                 "customer.read.any",   // Xem bất kỳ customer
                 "customer.update.any", // Sửa bất kỳ customer
                 "customer.delete.any"  // (tuỳ nghiệp vụ có dùng hay không)
         };
 
-        // Lưu base
+        // Thêm quyền "role.read.all"
+        createPermissionIfNotExist(
+                "role.read.all",
+                "Xem tất cả các role",
+                "Quyền xem tất cả các vai trò trong hệ thống",
+                "role",
+                "read.all"
+        );
+        // Thêm quyền "user.read.all"
+        createPermissionIfNotExist(
+                "user.read.all",
+                "Xem tất cả người dùng",
+                "Quyền xem tất cả người dùng trong hệ thống",
+                "user",
+                "read.all"
+        );
+
+        // Lưu các quyền khác
         for (String[] p : base) {
             String resource = p[0], action = p[1];
             String display  = p[2], desc = p[3];
             String name     = resource + "." + action;
             createPermissionIfNotExist(name, display, desc, resource, action);
         }
+
         // Lưu customer.any*
         for (String name : customerAny) {
             createPermissionIfNotExist(
@@ -140,6 +157,7 @@ import java.util.stream.Collectors;
             );
         }
     }
+
 
     private Permission createPermissionIfNotExist(String name, String displayName, String description, String resource, String action) {
         return permissionRepository.findByName(name).orElseGet(() -> {
