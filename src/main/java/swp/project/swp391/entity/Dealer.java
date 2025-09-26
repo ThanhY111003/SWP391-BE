@@ -44,9 +44,9 @@ public class Dealer {
     private Region region;
 
     // Mối quan hệ với User (Many-to-One)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    // Mối quan hệ với User (One-to-Many: Một Dealer có nhiều User)
+    @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<User> users;
 
     // Mối quan hệ với Order (One-to-Many)
     @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

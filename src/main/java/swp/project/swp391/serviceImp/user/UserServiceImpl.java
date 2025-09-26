@@ -1,13 +1,11 @@
     package swp.project.swp391.serviceImp.user;
 
     import jakarta.transaction.Transactional;
-    import jakarta.validation.constraints.Email;
     import lombok.RequiredArgsConstructor;
     import org.springframework.security.core.context.SecurityContextHolder;
     import org.springframework.security.crypto.password.PasswordEncoder;
     import org.springframework.stereotype.Service;
     import swp.project.swp391.constant.ErrorHandler;
-    import swp.project.swp391.entity.Customer;
     import swp.project.swp391.entity.Dealer;
     import swp.project.swp391.entity.Role;
     import swp.project.swp391.entity.User;
