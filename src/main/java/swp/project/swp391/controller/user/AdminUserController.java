@@ -47,5 +47,4 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
-
 }

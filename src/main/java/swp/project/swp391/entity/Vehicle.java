@@ -60,10 +60,6 @@ public class Vehicle {
     @JoinColumn(name = "vehicle_model_id", nullable = false)
     private VehicleModel vehicleModel;
 
-    // Mối quan hệ với Inventory (One-to-Many)
-    @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Inventory> inventories;
-
     // Mối quan hệ với OrderItem (One-to-Many)
     @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> orderItems;
