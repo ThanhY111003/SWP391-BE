@@ -110,6 +110,7 @@ import java.util.stream.Collectors;
                 {"dealer","update","Cập nhật đại lý","Sửa thông tin đại lý"},
                 {"dealer","inactive","Vô hiệu hóa đại lý","Vô hiệu hóa đại lý"},
                 {"dealer","reactivate","Kích hoạt lại đại lý","Kích hoạt lại đại lý"},
+                {"dealer","delete","Xoá đại lý","Xoá đại lý"},
 
                 {"report","read","Xem báo cáo","Xem các báo cáo"},
                 {"report","export","Xuất báo cáo","Xuất báo cáo ra file"}
