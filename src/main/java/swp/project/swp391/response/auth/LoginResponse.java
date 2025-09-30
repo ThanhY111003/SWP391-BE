@@ -1,4 +1,4 @@
-package swp.project.swp391.response;
+package swp.project.swp391.response.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,5 +12,7 @@ import lombok.Builder;
 public class LoginResponse {
     private String token;
     private String refreshToken;
-    private String message; // Thêm trường message để trả về thông báo thành công
+    private String message;
+    private String roleName;
+    // Thêm trường message để trả về thông báo thành công
 }

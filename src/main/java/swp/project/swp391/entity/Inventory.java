@@ -8,7 +8,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inventories")
+@Table(name = "inventories",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"dealer_id", "vehicle_model_id"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,14 +18,14 @@ public class Inventory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity = 0;
+    @Column(nullable = false)
+    private Integer quantity = 0; // tổng số xe nhập
 
-    @Column(name = "reserved_quantity")
-    private Integer reservedQuantity = 0;
+    @Column(name = "reserved_quantity", nullable = false)
+    private Integer reservedQuantity = 0; // xe đã giữ chỗ
 
-    @Column(name = "available_quantity")
-    private Integer availableQuantity = 0;
+    @Column(name = "available_quantity", nullable = false)
+    private Integer availableQuantity = 0; // quantity - reserved
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -35,12 +36,12 @@ public class Inventory {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Mối quan hệ với Vehicle (Many-to-One)
+    // Liên kết tới model
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vehicle_id", nullable = false)
-    private Vehicle vehicle;
+    @JoinColumn(name = "vehicle_model_id", nullable = false)
+    private VehicleModel vehicleModel;
 
-    // Mối quan hệ với Dealer (Many-to-One)
+    // Liên kết tới dealer
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dealer_id", nullable = false)
     private Dealer dealer;

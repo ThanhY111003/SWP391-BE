@@ -16,28 +16,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBaseException(BaseException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
-                ex.getErrorHandler().getHttpStatus().value(),
+                ex.getErrorHandler().getStatus().value(),
                 ex.getErrorHandler().getMessage()
         );
-        return new ResponseEntity<>(errorResponse, ex.getErrorHandler().getHttpStatus());
+        return new ResponseEntity<>(errorResponse, ex.getErrorHandler().getStatus());
     }
 
+    // Phương thức xử lý lỗi validation đã được tối ưu
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
-
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            // Kiểm tra xem lỗi có phải là FieldError không
+            String fieldName = "global_error";
+            String errorMessage = error.getDefaultMessage();
+
             if (error instanceof FieldError) {
-                String fieldName = ((FieldError) error).getField();
-                String errorMessage = error.getDefaultMessage();
-                errors.put(fieldName, errorMessage);
-            } else {
-                // Nếu không phải, đó là lỗi toàn cục (ví dụ: PasswordMatches)
-                String objectName = error.getObjectName();
-                String errorMessage = error.getDefaultMessage();
-                errors.put(objectName, errorMessage); // Hoặc một key chung nào đó, ví dụ "global"
+                fieldName = ((FieldError) error).getField();
             }
+
+            errors.put(fieldName, errorMessage);
         });
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }

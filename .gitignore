@@ -41,3 +41,5 @@ local.properties
 
 # Hệ điều hành Windows
 Thumbs.db
+node_modules/
+

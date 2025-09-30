@@ -1,4 +1,5 @@
 package swp.project.swp391.entity;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,19 +31,39 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    // THÊM các trường sau để lưu thông tin chung của mọi người dùng
     @Column(name = "full_name")
     private String fullName;
 
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "phone_number")
+    private Boolean isVerified = false;
+
+    @Column(name = "phone_number", unique = true)
     private String phoneNumber;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    // ====== Thông tin cá nhân chung ======
+    @Column(name = "id_number", unique = true)
+    private String idNumber;
+
+    @Column(name = "date_of_birth")
+    private LocalDateTime dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
+    public enum Gender {
+        MALE,
+        FEMALE
+    }
+
+    // ====== Audit ======
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -52,6 +73,7 @@ public class User implements UserDetails {
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 
+    // ====== Quan hệ ======
     @OneToMany(mappedBy = "createdBy")
     private List<Order> orders;
 
@@ -63,14 +85,14 @@ public class User implements UserDetails {
     )
     private Set<Role> roles;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Dealer> dealers;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dealer_id")
+    private Dealer dealer;
 
-    // THAY ĐỔI mối quan hệ One-to-One
-    // Bỏ @JoinColumn và @mappedBy. Customer sẽ là bên sở hữu mối quan hệ
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Customer customer;
 
+    // ====== Lifecycle ======
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -82,7 +104,7 @@ public class User implements UserDetails {
         updatedAt = LocalDateTime.now();
     }
 
-    // UserDetails implementation
+    // ====== UserDetails implementation ======
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()

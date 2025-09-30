@@ -8,5 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
-    Boolean existsByIdNumber(String idNumber);
+    Optional<Customer> findByUserId(Long userId);
+    Optional<Customer> findByIdAndUserId(Long id, Long userId); // thêm cái này
 }
