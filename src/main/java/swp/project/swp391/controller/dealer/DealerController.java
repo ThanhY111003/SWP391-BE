@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.entity.User;
 import swp.project.swp391.request.dealer.DealerRequest;
 import swp.project.swp391.response.dealer.DealerResponse;
@@ -11,7 +12,6 @@ import swp.project.swp391.service.dealer.DealerService;
 import swp.project.swp391.security.RbacGuard;
 
 import jakarta.validation.Valid;
-
 import java.security.Principal;
 import java.util.List;
 
@@ -23,90 +23,49 @@ public class DealerController {
     private final DealerService dealerService;
     private final RbacGuard guard;
 
-    // API để tạo Dealer
-    @PostMapping("/api/create")
-    public ResponseEntity<DealerResponse> createDealer(@Valid @RequestBody DealerRequest dealerRequest) {
-        User currentUser = guard.me(); // Lấy người dùng hiện tại bằng `me()`
-
-        // Gọi service để tạo Dealer
+    @PostMapping
+    public ResponseEntity<ApiResponse<DealerResponse>> createDealer(@Valid @RequestBody DealerRequest dealerRequest) {
+        User currentUser = guard.me();
         DealerResponse dealerResponse = dealerService.createDealer(dealerRequest, currentUser);
-
-        // Trả về phản hồi
-        return new ResponseEntity<>(dealerResponse, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(dealerResponse, "Tạo Dealer thành công"));
     }
 
-    // API để đánh dấu dealer là inactive
     @PatchMapping("/{dealerId}/inactive")
-    public ResponseEntity<DealerResponse> inactiveDealer(@PathVariable Long dealerId) {
-        User currentUser = guard.me(); // Lấy người dùng hiện tại
-
-        // Gọi service để inactive dealer
+    public ResponseEntity<ApiResponse<DealerResponse>> inactiveDealer(@PathVariable Long dealerId) {
+        User currentUser = guard.me();
         DealerResponse dealerResponse = dealerService.inactiveDealer(dealerId, currentUser);
-
-        // Trả về phản hồi
-        return new ResponseEntity<>(dealerResponse, HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(dealerResponse, "Đã chuyển Dealer sang trạng thái inactive"));
     }
 
-    // API để reactivate dealer (kích hoạt lại)
     @PatchMapping("/{dealerId}/reactivate")
-    public ResponseEntity<DealerResponse> reactivateDealer(@PathVariable Long dealerId) {
-        User currentUser = guard.me(); // Lấy người dùng hiện tại
-
-        // Gọi service để reactivate dealer
+    public ResponseEntity<ApiResponse<DealerResponse>> reactivateDealer(@PathVariable Long dealerId) {
+        User currentUser = guard.me();
         DealerResponse dealerResponse = dealerService.reactivateDealer(dealerId, currentUser);
-
-        // Trả về phản hồi
-        return new ResponseEntity<>(dealerResponse, HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(dealerResponse, "Dealer đã được kích hoạt lại"));
     }
 
-    // API để lấy danh sách tất cả các dealer
-    @GetMapping("getAll")
-    public ResponseEntity<List<DealerResponse>> getAllDealers(Principal principal) {
-        User currentUser = null;
-
-        // Nếu có principal (người dùng đã đăng nhập), lấy thông tin người dùng hiện tại
-        if (principal != null) {
-            currentUser = guard.me();  // Guard giúp lấy thông tin người dùng hiện tại
-        }
-
-        // Gọi service để lấy tất cả các dealer
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<DealerResponse>>> getAllDealers(Principal principal) {
+        User currentUser = principal != null ? guard.me() : null;
         List<DealerResponse> dealerResponses = dealerService.getAllDealers(currentUser);
-
-        return new ResponseEntity<>(dealerResponses, HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(dealerResponses, "Lấy danh sách Dealer thành công"));
     }
 
-
-
-    // API để lấy thông tin của một Dealer theo dealerId
     @GetMapping("/{dealerId}")
-    public ResponseEntity<DealerResponse> getDealer(@PathVariable Long dealerId, Principal principal) {
-        User currentUser = null;
-
-        // Kiểm tra nếu người dùng đã đăng nhập
-        if (principal != null) {
-            currentUser = guard.me();  // Lấy thông tin người dùng hiện tại
-        }
-
-        // Gọi service để lấy dealer theo ID
+    public ResponseEntity<ApiResponse<DealerResponse>> getDealer(@PathVariable Long dealerId, Principal principal) {
+        User currentUser = principal != null ? guard.me() : null;
         DealerResponse dealerResponse = dealerService.getDealer(dealerId, currentUser);
-
-        return new ResponseEntity<>(dealerResponse, HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(dealerResponse, "Lấy thông tin Dealer thành công"));
     }
-    @PutMapping("/edit{dealerId}")
-    public ResponseEntity<DealerResponse> editDealer(
+
+    @PutMapping("/{dealerId}")
+    public ResponseEntity<ApiResponse<DealerResponse>> editDealer(
             @PathVariable Long dealerId,
             @Valid @RequestBody DealerRequest dealerRequest,
             Principal principal) {
-        User currentUser = null;
-
-        // Kiểm tra nếu người dùng đã đăng nhập
-        if (principal != null) {
-            currentUser = guard.me();  // Lấy thông tin người dùng hiện tại
-        }
-
-        // Gọi service để chỉnh sửa thông tin đại lý
+        User currentUser = principal != null ? guard.me() : null;
         DealerResponse updatedDealer = dealerService.editDealer(dealerId, dealerRequest, currentUser);
-
-        return new ResponseEntity<>(updatedDealer, HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(updatedDealer, "Cập nhật Dealer thành công"));
     }
 }

@@ -1,17 +1,17 @@
 package swp.project.swp391.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "vehicle_colors")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class VehicleColor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,5 +27,8 @@ public class VehicleColor {
     @ManyToOne
     @JoinColumn(name = "vehicle_model_id")
     private VehicleModel vehicleModel;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
 }
 

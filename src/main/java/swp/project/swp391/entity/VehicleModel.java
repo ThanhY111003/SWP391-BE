@@ -1,20 +1,19 @@
 package swp.project.swp391.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "vehicle_models")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class VehicleModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,37 +35,61 @@ public class VehicleModel {
     private Integer year;
 
     @Column(name = "battery_capacity")
-    private Integer batteryCapacity; // kWh
+    private Integer batteryCapacity;
 
     @Column(name = "range_km")
     private Integer rangeKm;
 
     @Column(name = "charging_time")
-    private Integer chargingTime; // minutes
+    private Integer chargingTime;
 
     @Column(name = "max_speed")
-    private Integer maxSpeed; // km/h
+    private Integer maxSpeed;
 
     @Column(name = "acceleration")
-    private BigDecimal acceleration; // 0-100 km/h in seconds
+    private BigDecimal acceleration;
 
     @Column(name = "seating_capacity")
     private Integer seatingCapacity;
 
     @Column(name = "cargo_volume")
-    private BigDecimal cargoVolume; // liters
+    private BigDecimal cargoVolume;
 
-    @Column(name = "base_price")
-    private BigDecimal basePrice;
+    @Column(name = "manufacturer_price", precision = 15, scale = 2)
+    private BigDecimal manufacturerPrice;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    // Mối quan hệ với Vehicle (One-to-Many)
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Vehicle> vehicles;
+    private List<VehicleColor> vehicleColors;
 
-    @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Inventory> inventories = new ArrayList<>();
+    @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<VehicleInstance> vehicleInstances;
 
+    @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Inventory> inventories;
+
+    @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<VehiclePrice> vehiclePrices;
+
+    @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<OrderDetail> orderDetails;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

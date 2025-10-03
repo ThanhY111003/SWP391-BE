@@ -1,13 +1,13 @@
 package swp.project.swp391.controller.user;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import swp.project.swp391.repository.RoleRepository;
 import swp.project.swp391.request.user.CreateUserRequest;
-import swp.project.swp391.response.ApiResponse;
-import swp.project.swp391.response.role.RoleResponse;
+import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.response.user.CreateUserResponse;
 import swp.project.swp391.response.user.UserResponse;
 import swp.project.swp391.service.role.RoleService;
@@ -20,7 +20,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminUserController {
     private final UserService userService;
-    private final RoleService roleService;
 
     @PutMapping("/{id}/inactive")
     public ResponseEntity<ApiResponse<?>> inactiveUser(@PathVariable Long id) {
@@ -31,20 +30,25 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<?>> reactivateUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.reactivateUser(id));
     }
-    @PostMapping("/create-user")
-    public ResponseEntity<ApiResponse<CreateUserResponse>> createUser(
-            @Valid @RequestBody CreateUserRequest request
-    ) {
-        return ResponseEntity.ok(userService.createUser(request));
-    }
-
-    @GetMapping("/roles-get-all")
-    public ResponseEntity<List<RoleResponse>> getAllRoles() {
-        return ResponseEntity.ok(roleService.getAllRoles());
-    }
 
     @GetMapping("/get-all-users")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @Operation(
+            summary = "Tạo người dùng nội bộ",
+            description = """
+            ADMIN: tạo được EVM_STAFF, DEALER_MANAGER, DEALER_STAFF;
+            EVM_STAFF: tạo được DEALER_MANAGER, DEALER_STAFF;
+            DEALER_MANAGER: tạo được DEALER_STAFF (trong dealer của mình).
+            Email sẽ nhận OTP để xác thực & đặt mật khẩu lần đầu.
+            """
+    )
+    @PostMapping("/create-users")
+    public ResponseEntity<ApiResponse<Void>> createUser(@Valid @RequestBody CreateUserRequest request) {
+        userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.okMsg("Tạo tài khoản thành công. OTP đã gửi đến email người dùng."));
     }
 }

@@ -1,14 +1,12 @@
 package swp.project.swp391.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -16,7 +14,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -37,7 +36,8 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    private Boolean isVerified = false;
+    @Column(name = "must_change_password")
+    private Boolean mustChangePassword = false;
 
     @Column(name = "phone_number", unique = true)
     private String phoneNumber;
@@ -45,12 +45,11 @@ public class User implements UserDetails {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    // ====== Thông tin cá nhân chung ======
     @Column(name = "id_number", unique = true)
     private String idNumber;
 
     @Column(name = "date_of_birth")
-    private LocalDateTime dateOfBirth;
+    private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
     private Gender gender;
@@ -58,12 +57,6 @@ public class User implements UserDetails {
     @Column(columnDefinition = "TEXT")
     private String address;
 
-    public enum Gender {
-        MALE,
-        FEMALE
-    }
-
-    // ====== Audit ======
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -73,11 +66,7 @@ public class User implements UserDetails {
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 
-    // ====== Quan hệ ======
-    @OneToMany(mappedBy = "createdBy")
-    private List<Order> orders;
-
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -89,10 +78,12 @@ public class User implements UserDetails {
     @JoinColumn(name = "dealer_id")
     private Dealer dealer;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Customer customer;
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Order> ordersCreated;
 
-    // ====== Lifecycle ======
+    @OneToMany(mappedBy = "soldByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CustomerVehicle> vehiclesSold;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -104,7 +95,6 @@ public class User implements UserDetails {
         updatedAt = LocalDateTime.now();
     }
 
-    // ====== UserDetails implementation ======
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
@@ -130,5 +120,11 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return isActive;
+    }
+
+    public enum Gender {
+        MALE,
+        FEMALE,
+        OTHER
     }
 }

@@ -39,7 +39,16 @@ public enum ErrorHandler {
     // Dealer Errors
     DEALER_REQUIRED(HttpStatus.BAD_REQUEST, 400, "dealerId là bắt buộc đối với vai trò DEALER_MANAGER và DEALER_STAFF"),
     DEALER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy đại lý"),
-    DEALER_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 400, "Không được phép cung cấp dealerId cho vai trò EVM_STAFF");
+    DEALER_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 400, "Không được phép cung cấp dealerId cho vai trò EVM_STAFF"),
+    DEALER_LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy cấp đại lý"),
+    CODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Không thể tạo mã đại lý sau nhiều lần thử"),
+    // Vehicle Model Errors
+    VEHICLE_MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mẫu xe"),
+    MODEL_CODE_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Mã mẫu xe đã tồn tại"),
+    VIN_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "VIN đã tồn tại"),
+    VEHICLE_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe");
+
+
     private final HttpStatus status;
     private final int code;
     private final String message;
