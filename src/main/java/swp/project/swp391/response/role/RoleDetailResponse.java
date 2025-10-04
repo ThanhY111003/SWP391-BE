@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import swp.project.swp391.entity.Role;
 
-import java.util.Set;
+import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 
 @Data
@@ -18,7 +18,9 @@ public class RoleDetailResponse {
     private String description;
     private Boolean isActive;
     private Boolean isCustomized;
-    private Set<PermissionInfo> permissions;
+
+    // Dùng LinkedHashSet để giữ nguyên thứ tự chèn (đã sort trước đó)
+    private LinkedHashSet<PermissionInfo> permissions;
 
     @Data
     @NoArgsConstructor
@@ -33,10 +35,11 @@ public class RoleDetailResponse {
     }
 
     /**
-     * Convert từ Entity sang Response
+     * Convert từ Entity sang Response (permissions đã sort theo ID)
      */
     public static RoleDetailResponse fromEntity(Role role) {
-        Set<PermissionInfo> permissionInfos = role.getPermissions().stream()
+        LinkedHashSet<PermissionInfo> permissionInfos = role.getPermissions().stream()
+                .sorted(java.util.Comparator.comparing(p -> p.getId())) // sort theo id
                 .map(p -> new PermissionInfo(
                         p.getId(),
                         p.getName(),
@@ -45,7 +48,7 @@ public class RoleDetailResponse {
                         p.getResource(),
                         p.getAction()
                 ))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return new RoleDetailResponse(
                 role.getId(),

@@ -8,9 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import swp.project.swp391.request.user.CreateUserRequest;
 import swp.project.swp391.api.ApiResponse;
-import swp.project.swp391.response.user.CreateUserResponse;
 import swp.project.swp391.response.user.UserResponse;
-import swp.project.swp391.service.role.RoleService;
 import swp.project.swp391.service.user.UserService;
 
 import java.util.List;
@@ -49,6 +47,6 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<Void>> createUser(@Valid @RequestBody CreateUserRequest request) {
         userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.okMsg("Tạo tài khoản thành công. OTP đã gửi đến email người dùng."));
+                .body(ApiResponse.okMsg("Tạo tài khoản thành công. Tên đăng nhập và mật khẩu đã gửi đến email người dùng."));
     }
 }

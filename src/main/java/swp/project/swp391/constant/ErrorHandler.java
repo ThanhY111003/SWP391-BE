@@ -17,6 +17,7 @@ public enum ErrorHandler {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy người dùng"),
     ACCOUNT_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, 400, "Tài khoản đã được xác minh"),
     INVALID_EMAIL(HttpStatus.BAD_REQUEST, 400, "Địa chỉ email không hợp lệ hoặc không tồn tại."),
+    INVALID_OLD_PASSWORD(HttpStatus.BAD_REQUEST, 400, "Mật khẩu cũ không đúng"),
     // User Errors
     ACCOUNT_NOT_VERIFIED(HttpStatus.FORBIDDEN, 403, "Tài khoản chưa được xác minh. Vui lòng kiểm tra email để xác minh tài khoản của bạn."),
     ID_NUMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Số CMND/CCCD đã tồn tại"),
@@ -27,7 +28,7 @@ public enum ErrorHandler {
     ACCOUNT_BLOCKED(HttpStatus.FORBIDDEN, 403, "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ quản trị viên để biết thêm chi tiết."),
     // Role Errors
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy vai trò"),
-
+    PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy quyền"),
     // Common/Validation Errors
     INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, 400, "Định dạng ngày sinh không hợp lệ. Vui lòng sử dụng định dạng yyyy-MM-dd"),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, "Invalid request"),

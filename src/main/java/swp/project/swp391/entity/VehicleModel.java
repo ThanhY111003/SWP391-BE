@@ -58,6 +58,10 @@ public class VehicleModel {
     @Column(name = "manufacturer_price", precision = 15, scale = 2)
     private BigDecimal manufacturerPrice;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 

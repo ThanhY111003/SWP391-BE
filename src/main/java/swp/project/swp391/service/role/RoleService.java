@@ -1,5 +1,6 @@
 package swp.project.swp391.service.role;
 
+import swp.project.swp391.response.role.PermissionResponse;
 import swp.project.swp391.response.role.RoleDetailResponse;
 import swp.project.swp391.response.role.RoleResponse;
 
@@ -10,15 +11,19 @@ public interface RoleService {
 
     List<RoleResponse> getAllRoles();
 
+    List<PermissionResponse> getAllPermissions();
+
     RoleDetailResponse getRoleById(Long roleId);
 
-    RoleDetailResponse assignPermissionsToRole(Long roleId, Set<Long> permissionIds);
+    // ✅ Thêm hàng loạt (add-only, bỏ qua trùng)
+    RoleDetailResponse addPermissionsToRole(Long roleId, Set<Long> permissionIds);
 
-    RoleDetailResponse addPermissionToRole(Long roleId, Long permissionId);
-
-    RoleDetailResponse removePermissionFromRole(Long roleId, Long permissionId);
+    RoleDetailResponse removePermissionsFromRole(Long roleId, Set<Long> permissionIds);
 
     RoleDetailResponse resetRoleToDefault(Long roleId);
 
+    void assignRoleToUser(Long userId, Long roleId);
+
     void unassignRoleFromUser(Long userId, Long roleId);
+
 }

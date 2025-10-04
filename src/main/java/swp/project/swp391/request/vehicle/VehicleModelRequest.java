@@ -1,17 +1,15 @@
-// response/vehicle/VehicleModelResponse.java
-package swp.project.swp391.response.vehicle;
+// request/vehicle/VehicleModelRequest.java
+package swp.project.swp391.request.vehicle;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-@AllArgsConstructor
-public class VehicleModelResponse {
-    private Long id;
+public class VehicleModelRequest {
     private String name;
-    private String modelCode;
+    private String modelCode;      // unique
+    private String description;
     private String brand;
     private Integer year;
     private Integer batteryCapacity;
@@ -23,5 +21,4 @@ public class VehicleModelResponse {
     private BigDecimal cargoVolume;
     private BigDecimal manufacturerPrice;
     private String imageUrl;
-    private Boolean isActive;
 }

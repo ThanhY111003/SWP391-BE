@@ -24,7 +24,6 @@ import swp.project.swp391.service.user.UserService;
 import swp.project.swp391.service.auth.EmailService;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
@@ -163,7 +162,7 @@ public class UserServiceImpl implements UserService {
     <html>
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding:20px;">
         <div style="max-width:600px; margin:auto; background:#fff; padding:30px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-          <h2 style="color:#2e86de; text-align:center;">Tài khoản VinFast Dealer System</h2>
+          <h2 style="color:#2e86de; text-align:center;">Tài khoản 5bike Dealer System</h2>
           <p>Xin chào <b>%s</b>,</p>
           <p>Tài khoản của bạn đã được tạo với vai trò: <b>%s</b></p>
           <ul>
@@ -172,7 +171,7 @@ public class UserServiceImpl implements UserService {
           </ul>
           <p style="color:#e67e22;"><b>Vui lòng đăng nhập và đổi mật khẩu ngay ở lần đăng nhập đầu tiên.</b></p>
           <p style="font-size:12px; color:#999;">Không chia sẻ mật khẩu cho bất kỳ ai.</p>
-          <p style="text-align:center; font-size:12px; color:#aaa;">© 2025 VinFast Dealer System</p>
+          <p style="text-align:center; font-size:12px; color:#aaa;">© 2025 5bike Dealer System</p>
         </div>
       </body>
     </html>

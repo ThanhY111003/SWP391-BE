@@ -23,7 +23,7 @@ public class DealerController {
     private final DealerService dealerService;
     private final RbacGuard guard;
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ApiResponse<DealerResponse>> createDealer(@Valid @RequestBody DealerRequest dealerRequest) {
         User currentUser = guard.me();
         DealerResponse dealerResponse = dealerService.createDealer(dealerRequest, currentUser);
@@ -45,7 +45,7 @@ public class DealerController {
         return ResponseEntity.ok(ApiResponse.ok(dealerResponse, "Dealer đã được kích hoạt lại"));
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<DealerResponse>>> getAllDealers(Principal principal) {
         User currentUser = principal != null ? guard.me() : null;
         List<DealerResponse> dealerResponses = dealerService.getAllDealers(currentUser);

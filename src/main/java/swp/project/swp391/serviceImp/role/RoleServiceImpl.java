@@ -3,12 +3,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import swp.project.swp391.constant.ErrorHandler;
 import swp.project.swp391.entity.Permission;
 import swp.project.swp391.entity.Role;
 import swp.project.swp391.entity.User;
+import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.PermissionRepository;
 import swp.project.swp391.repository.RoleRepository;
 import swp.project.swp391.repository.UserRepository;
+import swp.project.swp391.response.role.PermissionResponse;
 import swp.project.swp391.response.role.RoleDetailResponse;
 import swp.project.swp391.response.role.RoleResponse;
 import swp.project.swp391.security.RbacGuard;
@@ -33,7 +36,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public List<RoleResponse> getAllRoles() {
         User currentUser = me();
-        guard.require(guard.has(currentUser, "role.read.all"));
+        guard.require(guard.has(currentUser, "role.read"));
 
         return roleRepository.findAll().stream()
                 .map(role -> new RoleResponse(
@@ -47,9 +50,27 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public List<PermissionResponse> getAllPermissions() {
+        guard.require(guard.has(me(), "role.read"));
+
+        return permissionRepository.findAll(org.springframework.data.domain.Sort.by("id"))
+                .stream()
+                .map(p -> new PermissionResponse(
+                        p.getId(),
+                        p.getName(),
+                        p.getDisplayName(),
+                        p.getDescription(),
+                        p.getResource(),
+                        p.getAction(),
+                        p.getIsActive()
+                ))
+                .toList();
+    }
+
+    @Override
     public RoleDetailResponse getRoleById(Long roleId) {
         User currentUser = me();
-        guard.require(guard.has(currentUser, "role.read.all"));
+        guard.require(guard.has(currentUser, "role.read"));
 
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + roleId));
@@ -57,76 +78,78 @@ public class RoleServiceImpl implements RoleService {
         return RoleDetailResponse.fromEntity(role);
     }
 
-    /**
-     * Assign danh sách permissions vào role (ghi đè hoàn toàn)
-     * ✨ Tự động set isCustomized = true
-     */
     @Override
     @Transactional
-    public RoleDetailResponse assignPermissionsToRole(Long roleId, Set<Long> permissionIds) {
+    public RoleDetailResponse addPermissionsToRole(Long roleId, Set<Long> permissionIds) {
         User currentUser = me();
         guard.require(guard.has(currentUser, "role.update"));
 
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleId));
+                .orElseThrow(() -> new BaseException(ErrorHandler.ROLE_NOT_FOUND));
 
-        Set<Permission> permissions = permissionIds.stream()
-                .map(id -> permissionRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Permission not found: " + id)))
-                .collect(Collectors.toSet());
+        // No-op nếu không có gì để thêm
+        if (permissionIds == null || permissionIds.isEmpty()) {
+            return RoleDetailResponse.fromEntity(role);
+        }
 
-        role.setPermissions(permissions);
-        role.setIsCustomized(true); // ✨ Đánh dấu đã custom
+        // Lấy sẵn các ID quyền hiện có để so theo ID, tránh phụ thuộc equals/hashCode
+        Set<Long> existingIds = role.getPermissions() == null
+                ? new java.util.HashSet<>()
+                : role.getPermissions().stream().map(Permission::getId).collect(java.util.stream.Collectors.toSet());
 
-        Role savedRole = roleRepository.save(role);
-        return RoleDetailResponse.fromEntity(savedRole);
+        // Batch load tất cả permission theo IDs
+        java.util.List<Permission> loaded = permissionRepository.findAllById(permissionIds);
+
+        // (Tuỳ chọn: strict) kiểm tra ID nào không tồn tại
+        if (loaded.size() != permissionIds.size()) {
+            java.util.Set<Long> foundIds = loaded.stream().map(Permission::getId).collect(java.util.stream.Collectors.toSet());
+            java.util.Set<Long> missing = new java.util.HashSet<>(permissionIds);
+            missing.removeAll(foundIds);
+            // Bạn có thể: throw lỗi, hoặc chỉ cảnh báo và bỏ qua.
+            throw new BaseException(ErrorHandler.PERMISSION_NOT_FOUND);
+        }
+
+        // Chỉ thêm những quyền chưa có
+        java.util.List<Permission> toAdd = loaded.stream()
+                .filter(p -> !existingIds.contains(p.getId()))
+                .toList();
+
+        if (toAdd.isEmpty()) {
+            return RoleDetailResponse.fromEntity(role); // không có thay đổi
+        }
+
+        role.getPermissions().addAll(toAdd);
+        role.setIsCustomized(true); // đã custom → seeder không đè lại
+        Role saved = roleRepository.save(role);
+
+        return RoleDetailResponse.fromEntity(saved);
     }
 
-    /**
-     * Thêm 1 permission vào role (không xóa permissions cũ)
-     * ✨ Tự động set isCustomized = true
-     */
+
     @Override
     @Transactional
-    public RoleDetailResponse addPermissionToRole(Long roleId, Long permissionId) {
+    public RoleDetailResponse removePermissionsFromRole(Long roleId, Set<Long> permissionIds) {
         User currentUser = me();
         guard.require(guard.has(currentUser, "role.update"));
 
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleId));
+                .orElseThrow(() -> new BaseException(ErrorHandler.ROLE_NOT_FOUND));
 
-        Permission permission = permissionRepository.findById(permissionId)
-                .orElseThrow(() -> new RuntimeException("Permission not found: " + permissionId));
+        if (permissionIds == null || permissionIds.isEmpty()) {
+            return RoleDetailResponse.fromEntity(role); // no-op
+        }
 
-        role.getPermissions().add(permission);
-        role.setIsCustomized(true); // ✨ Đánh dấu đã custom
+        // so theo ID để an toàn
+        java.util.Set<Long> ids = new java.util.HashSet<>(permissionIds);
+        boolean changed = role.getPermissions().removeIf(p -> ids.contains(p.getId()));
 
-        Role savedRole = roleRepository.save(role);
-        return RoleDetailResponse.fromEntity(savedRole);
+        if (changed) {
+            role.setIsCustomized(true);
+            role = roleRepository.save(role);
+        }
+        return RoleDetailResponse.fromEntity(role);
     }
 
-    /**
-     * Gỡ 1 permission ra khỏi role
-     * ✨ Tự động set isCustomized = true
-     */
-    @Override
-    @Transactional
-    public RoleDetailResponse removePermissionFromRole(Long roleId, Long permissionId) {
-        User currentUser = me();
-        guard.require(guard.has(currentUser, "role.update"));
-
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleId));
-
-        Permission permission = permissionRepository.findById(permissionId)
-                .orElseThrow(() -> new RuntimeException("Permission not found: " + permissionId));
-
-        role.getPermissions().remove(permission);
-        role.setIsCustomized(true); // ✨ Đánh dấu đã custom
-
-        Role savedRole = roleRepository.save(role);
-        return RoleDetailResponse.fromEntity(savedRole);
-    }
 
     /**
      * Reset role về cấu hình mặc định
@@ -136,7 +159,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public RoleDetailResponse resetRoleToDefault(Long roleId) {
         User currentUser = me();
-        guard.require(guard.has(currentUser, "role.update"));
+        guard.require(guard.has(currentUser, "role.reset"));
 
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + roleId));
@@ -150,19 +173,44 @@ public class RoleServiceImpl implements RoleService {
         Role savedRole = roleRepository.save(role);
         return RoleDetailResponse.fromEntity(savedRole);
     }
+
+    @Override
+    @Transactional
+    public void assignRoleToUser(Long userId, Long roleId) {
+        User currentUser = me();
+        guard.require(guard.has(currentUser, "role.assign"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
+
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ROLE_NOT_FOUND));
+
+        if (user.getRoles() == null) {
+            user.setRoles(new java.util.LinkedHashSet<>());
+        }
+        // add-only, bỏ qua trùng
+        if (!user.getRoles().contains(role)) {
+            user.getRoles().add(role);
+            userRepository.save(user);
+        }
+    }
+
     @Override
     @Transactional
     public void unassignRoleFromUser(Long userId, Long roleId) {
         User currentUser = me();
-        guard.require(guard.has(currentUser, "user.update"));
+        guard.require(guard.has(currentUser, "role.unassign"));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
 
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleId));
+                .orElseThrow(() -> new BaseException(ErrorHandler.ROLE_NOT_FOUND));
 
-        user.getRoles().remove(role);
-        userRepository.save(user);
+        if (user.getRoles() != null && user.getRoles().remove(role)) {
+            userRepository.save(user);
+        }
     }
+
 }

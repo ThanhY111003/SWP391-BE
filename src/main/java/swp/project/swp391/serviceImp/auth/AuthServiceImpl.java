@@ -133,16 +133,16 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
 
-        // Generate OTP
         String otp = generateOtp();
 
-        // Delete old token
-        tokenRepository.findByUser(user).ifPresent(tokenRepository::delete);
-
-        // Save new token
-        VerificationToken resetToken = new VerificationToken(otp, user);
-        resetToken.setExpirationDate(LocalDateTime.now().plusMinutes(5));
-        tokenRepository.save(resetToken);
+        VerificationToken vt = tokenRepository.findByUser(user).orElse(null);
+        if (vt == null) {
+            vt = new VerificationToken();
+            vt.setUser(user);
+        }
+        vt.setToken(otp);
+        vt.setExpirationDate(LocalDateTime.now().plusMinutes(5));
+        tokenRepository.save(vt);
 
         String emailBody = String.format("""
         <html>
@@ -205,57 +205,65 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new BaseException(ErrorHandler.INVALID_CREDENTIALS);
+            throw new BaseException(ErrorHandler.INVALID_OLD_PASSWORD);
         }
-
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setMustChangePassword(false);
         userRepository.save(user);
     }
+
+
+    /**
+     * Gửi lại OTP quên mật khẩu
+     */
     @Override
     @Transactional
-    public void resendForgotPasswordOtp(String email) {
+    public void resendForgotPasswordOtp(String rawEmail) {
+        // Chuẩn hoá email (tránh lệch hoa/thường, khoảng trắng)
+        String email = rawEmail.trim().toLowerCase();
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
 
-        // Tìm token hiện có
-        VerificationToken existing = tokenRepository.findByUser(user).orElse(null);
+        LocalDateTime now = LocalDateTime.now();
 
-        // Nếu còn hạn => không cho resend (yêu cầu sớm)
-        if (existing != null && existing.getExpirationDate().isAfter(LocalDateTime.now())) {
+        // Lấy (hoặc không) token hiện có
+        VerificationToken vt = tokenRepository.findByUser(user).orElse(null);
+
+        // Nếu còn hạn thì không cho resend
+        if (vt != null && vt.getExpirationDate() != null && vt.getExpirationDate().isAfter(now)) {
             throw new BaseException(ErrorHandler.REQUEST_OTP_TOO_SOON);
         }
 
-        // Nếu có token cũ (đã hết hạn) => xóa trước khi tạo mới
-        if (existing != null) {
-            tokenRepository.delete(existing);
-            // Nếu từng gặp lỗi unique/constraint thì mở dòng dưới
-            // entityManager.flush();
-        }
-
-        // Tạo OTP mới
+        // Sinh OTP mới
         String otp = generateOtp();
-        VerificationToken newToken = new VerificationToken(otp, user);
-        newToken.setExpirationDate(LocalDateTime.now().plusMinutes(5));
-        tokenRepository.save(newToken);
 
-        // Gửi email OTP mới
+        // Nếu chưa có bản ghi -> tạo mới; nếu có -> cập nhật tại chỗ (KHÔNG xoá)
+        if (vt == null) {
+            vt = new VerificationToken();
+            vt.setUser(user);
+        }
+        vt.setToken(otp);
+        vt.setExpirationDate(now.plusMinutes(5));
+        tokenRepository.save(vt); // upsert an toàn, không vi phạm unique(user_id)
+
+        // Gửi email OTP
         String emailBody = String.format("""
-    <html>
-      <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding:20px;">
-        <div style="max-width:500px; margin:auto; background:#fff; padding:30px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-          <h2 style="color:#2e86de; text-align:center;">OTP mới - Đặt lại mật khẩu</h2>
-          <p style="text-align:center;">Xin chào <b>%s</b>, đây là mã OTP mới để đặt lại mật khẩu:</p>
-          <h1 style="color:#e74c3c; text-align:center; letter-spacing:5px;">%s</h1>
-          <p style="text-align:center; color:#555;">Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ với bất kỳ ai.</p>
-        </div>
-      </body>
-    </html>
-    """, user.getFullName(), otp);
+        <html>
+          <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding:20px;">
+            <div style="max-width:500px; margin:auto; background:#fff; padding:30px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+              <h2 style="color:#2e86de; text-align:center;">OTP mới - Đặt lại mật khẩu</h2>
+              <p style="text-align:center;">Xin chào <b>%s</b>, đây là mã OTP mới để đặt lại mật khẩu:</p>
+              <h1 style="color:#e74c3c; text-align:center; letter-spacing:5px;">%s</h1>
+              <p style="text-align:center; color:#555;">Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ với bất kỳ ai.</p>
+            </div>
+          </body>
+        </html>
+        """, user.getFullName(), otp);
 
         emailService.sendEmail(user.getEmail(), "OTP mới - Đặt lại mật khẩu", emailBody);
-
         log.info("Resent forgot-password OTP to {}", user.getEmail());
     }
+
 
 }
