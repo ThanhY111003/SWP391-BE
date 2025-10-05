@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import swp.project.swp391.entity.Order;
 import swp.project.swp391.entity.OrderDetail;
-import swp.project.swp391.entity.VehicleColor;
+import swp.project.swp391.entity.VehicleModelColor;
 import swp.project.swp391.entity.VehicleModel;
 
 import java.util.List;
@@ -13,5 +13,5 @@ import java.util.List;
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> {
     List<OrderDetail> findByOrder(Order order);
     List<OrderDetail> findByVehicleModel(VehicleModel vehicleModel);
-    List<OrderDetail> findByVehicleColor(VehicleColor vehicleColor);
+    List<OrderDetail> findByVehicleColor(VehicleModelColor vehicleColor);
 }

@@ -55,8 +55,9 @@ public class DataInitializer implements CommandLineRunner {
             addOnlyByNames(evmStaffRole, pMap, List.of(
                     "user.create", "user.read", "user.update", "user.inactive", "user.reactivate",
                     "vehicle.create", "vehicle.read", "vehicle.update",
-                    "vehicleModel.create", "vehicleModel.read", "vehicleModel.update",
-                    "vehicleColor.create", "vehicleColor.read",
+                    "vehicleModel.create", "vehicleModel.update",
+                    "color.update", "color.create","color.inactive","color.reactive",
+                    "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
                     "order.read", "order.update",
                     "dealer.create", "dealer.read", "dealer.update",
                     "dealerLevel.read",
@@ -114,18 +115,23 @@ public class DataInitializer implements CommandLineRunner {
 
                 // Vehicle Instance
                 {"vehicle", "create", "Tạo xe", "Thêm xe vào hệ thống"},
-                {"vehicle", "read", "Xem xe", "Xem thông tin xe"},
                 {"vehicle", "update", "Cập nhật xe", "Sửa thông tin xe"},
 
-                // Vehicle Model
-                {"vehicleModel", "create", "Tạo model xe", "Thêm model xe mới"},
-                {"vehicleModel", "read", "Xem model xe", "Xem thông tin model xe"},
-                {"vehicleModel", "update", "Cập nhật model xe", "Sửa thông tin model"},
+                // Vehicle Model Color
+                {"vehicleModelColor", "create", "Gán màu xe", "Gán màu cho mẫu xe"},
+                {"vehicleModelColor", "update", "Cập nhật giá màu xe", "Cập nhật giá của màu xe"},
+                {"vehicleModelColor", "delete", "Gỡ màu xe", "Gỡ màu khỏi mẫu xe"},
 
-                // Vehicle Color
-                {"vehicleColor", "create", "Tạo màu xe", "Thêm màu xe mới"},
-                {"vehicleColor", "read", "Xem màu xe", "Xem màu xe"},
-                {"vehicleColor", "update", "Cập nhật màu xe", "Sửa thông tin màu xe"},
+                //Vehicle Model
+                {"vehicleModel", "create", "Tạo mẫu xe", "Thêm mẫu xe mới"},
+                {"vehicleModel", "read", "Xem mẫu xe", "Xem thông tin mẫu xe"},
+                {"vehicleModel", "update", "Cập nhật mẫu xe", "Sửa thông tin mẫu xe"},
+
+                // Color
+                {"color", "create", "Tạo màu xe", "Thêm màu xe mới"},
+                {"color", "update", "Cập nhật màu xe", "Sửa thông tin màu xe"},
+                {"color", "inactive", "Vô hiệu hoá màu xe", "Vô hiệu hoá màu xe"},
+                {"color", "reactive", "Kích hoạt màu xe", "Kích hoạt lại màu xe"},
 
                 // Order
                 {"order", "create", "Tạo đơn hàng", "Tạo đơn đặt xe"},

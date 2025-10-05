@@ -36,7 +36,7 @@ public class OrderDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_color_id", nullable = false)
-    private VehicleColor vehicleColor;
+    private VehicleModelColor vehicleColor;
 
     @PrePersist
     @PreUpdate

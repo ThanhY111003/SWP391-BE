@@ -45,9 +45,11 @@ public enum ErrorHandler {
     CODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Không thể tạo mã đại lý sau nhiều lần thử"),
     // Vehicle Model Errors
     VEHICLE_MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mẫu xe"),
-    MODEL_CODE_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Mã mẫu xe đã tồn tại"),
-    VIN_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "VIN đã tồn tại"),
-    VEHICLE_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe");
+    VEHICLE_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe"),
+    COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu"),
+    COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã tồn tại"),
+    VEHICLE_COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã được gán cho mẫu xe này"),
+    VEHICLE_MODEL_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Mẫu xe đã tồn tại");
 
 
     private final HttpStatus status;

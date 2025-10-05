@@ -50,7 +50,7 @@ public class VehicleInstance {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_color_id", nullable = false)
-    private VehicleColor vehicleColor;
+    private VehicleModelColor vehicleColor;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_dealer_id")
@@ -76,8 +76,6 @@ public class VehicleInstance {
         IN_STOCK,
         RESERVED,
         SOLD,
-        MAINTENANCE,
-        DAMAGED,
         SCRAPPED
     }
 }

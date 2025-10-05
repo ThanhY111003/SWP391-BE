@@ -72,7 +72,7 @@ public class VehicleModel {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<VehicleColor> vehicleColors;
+    private List<VehicleModelColor> vehicleColors;
 
     @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<VehicleInstance> vehicleInstances;

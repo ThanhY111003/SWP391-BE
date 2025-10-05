@@ -12,4 +12,9 @@ public class BaseException extends RuntimeException {
         super(errorHandler.getMessage());
         this.errorHandler = errorHandler;
     }
+    public BaseException(ErrorHandler errorHandler, String customMessage) {
+        super(customMessage);
+        this.errorHandler = errorHandler;
+    }
+
 }

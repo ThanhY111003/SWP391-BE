@@ -23,7 +23,8 @@ public class SampleDataInitializer implements CommandLineRunner {
     private final DealerLevelRepository dealerLevelRepository;
     private final DealerRepository dealerRepository;
     private final VehicleModelRepository vehicleModelRepository;
-    private final VehicleColorRepository vehicleColorRepository;
+    private final ColorRepository colorRepository;
+    private final VehicleModelColorRepository vehicleModelColorRepository;
     private final VehiclePriceRepository vehiclePriceRepository;
     private final CustomerRepository customerRepository;
 
@@ -206,15 +207,27 @@ public class SampleDataInitializer implements CommandLineRunner {
     }
 
     private void createColor(VehicleModel model, String name, String hex, BigDecimal adjustment) {
-        VehicleColor color = VehicleColor.builder()
+        // 1️⃣ Tạo hoặc lấy Color trong catalog
+        Color color = colorRepository.findByHexCode(hex)
+                .orElseGet(() -> {
+                    Color c = Color.builder()
+                            .colorName(name)
+                            .hexCode(hex)
+                            .isActive(true)
+                            .build();
+                    return colorRepository.save(c);
+                });
+
+        // 2️⃣ Gán Color vào model
+        VehicleModelColor modelColor = VehicleModelColor.builder()
                 .vehicleModel(model)
-                .colorName(name)
-                .hexCode(hex)
+                .color(color)
                 .priceAdjustment(adjustment)
-                .isActive(true)
                 .build();
-        vehicleColorRepository.save(color);
+
+        vehicleModelColorRepository.save(modelColor);
     }
+
 
     @Transactional
     protected void initializeVehiclePrices() {
