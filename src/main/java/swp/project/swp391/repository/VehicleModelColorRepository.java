@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public interface VehicleModelColorRepository extends JpaRepository<VehicleModelColor, Long> {
     boolean existsByVehicleModelAndColor(VehicleModel model, Color color);
+
     Optional<VehicleModelColor> findByVehicleModelIdAndColorId(Long modelId, Long colorId);
+
     List<VehicleModelColor> findByVehicleModelId(Long modelId);
 }

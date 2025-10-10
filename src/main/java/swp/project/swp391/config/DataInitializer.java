@@ -58,9 +58,10 @@ public class DataInitializer implements CommandLineRunner {
                     "vehicleModel.create", "vehicleModel.update",
                     "color.update", "color.create","color.inactive","color.reactive",
                     "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
-                    "order.read", "order.update",
-                    "dealer.create", "dealer.read", "dealer.update",
-                    "dealerLevel.read",
+                    "order.view", "order.update","order.approve",
+                    "dealer.create", "dealer.read", "dealer.update", "dealerLevel.read",
+                    "dealerLevel.create", "dealerLevel.update",
+
                     "inventory.read",
                     "report.read", "report.export"
             ));
@@ -135,8 +136,9 @@ public class DataInitializer implements CommandLineRunner {
 
                 // Order
                 {"order", "create", "Tạo đơn hàng", "Tạo đơn đặt xe"},
-                {"order", "read", "Xem đơn hàng", "Xem thông tin đơn hàng"},
+                {"order", "view", "Xem đơn hàng PENDING", "Xem thông tin đơn hàng PENDING"},
                 {"order", "update", "Cập nhật đơn hàng", "Cập nhật trạng thái đơn"},
+                {"order", "approve", "Phê duyệt đơn hàng", "Phê duyệt đơn hàng từ trạng thái PENDING"},
 
                 // Dealer
                 {"dealer", "create", "Tạo đại lý", "Thêm đại lý mới"},
@@ -145,7 +147,9 @@ public class DataInitializer implements CommandLineRunner {
                 {"dealer", "inactive", "Vô hiệu hoá đại lý", "Vô hiệu hoá đại lý"},
                 {"dealer", "reactivate", "Kích hoạt đại lý", "Kích hoạt lại đại lý"},
 
-                // Dealer Level (giữ nguyên chỉ read theo thiết kế hiện tại)
+                {"dealerLevel", "create", "Tạo cấp độ đại lý", "Thêm cấp độ đại lý mới"},
+                {"dealerLevel", "update", "Cập nhật cấp độ đại lý", "Sửa thông tin cấp độ đại lý"},
+
                 {"dealerLevel", "read", "Xem cấp độ đại lý", "Xem thông tin cấp độ"},
 
                 // Inventory (giữ nguyên chỉ read theo thiết kế hiện tại)

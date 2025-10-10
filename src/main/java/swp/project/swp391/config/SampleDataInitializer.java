@@ -54,7 +54,7 @@ public class SampleDataInitializer implements CommandLineRunner {
         DealerLevel level1 = DealerLevel.builder()
                 .levelName("Level 1")
                 .levelNumber(1)
-                .discountRate(BigDecimal.ZERO)
+                .discountRate(new BigDecimal("10.00"))
                 .maxOrderQuantity(100)
                 .creditLimit(new BigDecimal("10000000000")) // 10 tỷ
                 .description("Đại lý cấp 1")
@@ -76,7 +76,7 @@ public class SampleDataInitializer implements CommandLineRunner {
         DealerLevel level3 = DealerLevel.builder()
                 .levelName("Level 3")
                 .levelNumber(3)
-                .discountRate(new BigDecimal("10.00"))
+                .discountRate(BigDecimal.ZERO)
                 .maxOrderQuantity(20)
                 .creditLimit(new BigDecimal("2000000000")) // 2 tỷ
                 .description("Đại lý cấp 3")

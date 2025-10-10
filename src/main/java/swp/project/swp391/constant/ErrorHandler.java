@@ -43,13 +43,23 @@ public enum ErrorHandler {
     DEALER_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 400, "Không được phép cung cấp dealerId cho vai trò EVM_STAFF"),
     DEALER_LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy cấp đại lý"),
     CODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Không thể tạo mã đại lý sau nhiều lần thử"),
+    DEALER_LEVEL_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Cấp đại lý với số cấp độ này đã tồn tại"),
+    DEALER_LEVEL_IN_USE(HttpStatus.BAD_REQUEST, 400, "Cấp đại lý đang được sử dụng bởi một hoặc nhiều đại lý và không thể xóa, đổi level hiện tại của đại lý trước khi xóa cấp độ này"),
+
     // Vehicle Model Errors
+    ENGINE_NUMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Số máy đã tồn tại"),
+    VIN_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "VIN đã tồn tại"),
     VEHICLE_MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mẫu xe"),
     VEHICLE_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe"),
     COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu"),
     COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã tồn tại"),
     VEHICLE_COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã được gán cho mẫu xe này"),
-    VEHICLE_MODEL_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Mẫu xe đã tồn tại");
+    VEHICLE_MODEL_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Mẫu xe đã tồn tại"),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Lỗi máy chủ nội bộ"),
+
+    // Order Errors
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy đơn hàng");
+
 
 
     private final HttpStatus status;
