@@ -25,33 +25,26 @@ public class Order {
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
-    private OrderStatus status = OrderStatus.DRAFT;
+    @Builder.Default
+    private OrderStatus status = OrderStatus.PENDING;
 
     // ===== Thông tin tiền =====
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(name = "deposit_amount", precision = 15, scale = 2)
-    private BigDecimal depositAmount = BigDecimal.ZERO;
-
-    @Column(name = "paid_amount", precision = 15, scale = 2)
-    private BigDecimal paidAmount = BigDecimal.ZERO;
-
-    @Column(name = "remaining_amount", precision = 15, scale = 2)
-    private BigDecimal remainingAmount;
-
-    // ===== Thông tin ngày thanh toán =====
+    // ===== Thông tin thanh toán =====
     @Column(name = "deposit_paid_date")
-    private LocalDate depositPaidDate;
+    private LocalDate depositPaidDate; // Ngày trả cọc (chỉ dùng cho trả góp)
 
     @Column(name = "full_payment_date")
-    private LocalDate fullPaymentDate;
-
-    @Column(name = "payment_due_date")
-    private LocalDate paymentDueDate;
+    private LocalDate fullPaymentDate; // Ngày thanh toán đầy đủ
 
     @Column(name = "payment_notes", columnDefinition = "TEXT")
     private String paymentNotes;
+
+    @Column(name = "is_installment", nullable = false)
+    @Builder.Default
+    private Boolean isInstallment = false;  // Phân biệt trả thẳng hay trả góp
 
     // ===== Thông tin đơn hàng =====
     @Column(name = "order_date", nullable = false)
@@ -84,6 +77,66 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<OrderDetail> orderDetails;
 
+    // Chỉ lưu trữ InstallmentPlan khi trả góp
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<InstallmentPlan> installmentPlans;
+
+    // ===== Phương thức tính toán (KHÔNG lưu vào DB) =====
+
+    /**
+     * Tính tổng số tiền đã thanh toán
+     * - Trả thẳng: trả hết khi status = COMPLETED
+     * - Trả góp: tổng số tiền đã trả của tất cả các kỳ
+     */
+    @Transient
+    public BigDecimal getPaidAmount() {
+        if (Boolean.FALSE.equals(isInstallment)) {
+            // Trả thẳng
+            return (status == OrderStatus.COMPLETED) ? totalAmount : BigDecimal.ZERO;
+        } else {
+            // Trả góp
+            if (installmentPlans == null || installmentPlans.isEmpty()) {
+                return BigDecimal.ZERO;
+            }
+            return installmentPlans.stream()
+                    .map(InstallmentPlan::getPaidAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+    }
+
+    /**
+     * Tính số tiền còn lại phải trả
+     */
+    @Transient
+    public BigDecimal getRemainingAmount() {
+        if (totalAmount == null) {
+            return BigDecimal.ZERO;
+        }
+        return totalAmount.subtract(getPaidAmount());
+    }
+
+    /**
+     * Kiểm tra đã thanh toán đầy đủ chưa
+     */
+    @Transient
+    public boolean isFullyPaid() {
+        return getRemainingAmount().compareTo(BigDecimal.ZERO) <= 0;
+    }
+
+    /**
+     * Lấy % tiến độ thanh toán
+     */
+    @Transient
+    public BigDecimal getPaymentProgress() {
+        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return getPaidAmount()
+                .divide(totalAmount, 4, BigDecimal.ROUND_HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
+
+    // ===== Lifecycle callbacks =====
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -91,31 +144,34 @@ public class Order {
         if (orderDate == null) {
             orderDate = LocalDate.now();
         }
-        calculateRemainingAmount();
+        validatePaymentType();
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-        calculateRemainingAmount();
+        validatePaymentType();
     }
 
-    private void calculateRemainingAmount() {
-        if (totalAmount != null && paidAmount != null) {
-            this.remainingAmount = totalAmount.subtract(paidAmount);
+    /**
+     * Validate logic trả thẳng/trả góp
+     */
+    private void validatePaymentType() {
+        if (Boolean.FALSE.equals(isInstallment)) {
+            // Trả thẳng KHÔNG được có installment plans
+            if (installmentPlans != null && !installmentPlans.isEmpty()) {
+                throw new IllegalStateException(
+                        "Đơn hàng trả thẳng không thể có kế hoạch trả góp"
+                );
+            }
         }
+        // Note: Không validate ngược lại vì có thể tạo order trước, thêm plans sau
     }
 
     public enum OrderStatus {
-        DRAFT,              // Nháp
-        PENDING,            // Chờ xác nhận
-        CONFIRMED,          // Đã xác nhận
-        DEPOSIT_PAID,       // Đã đặt cọc
-        IN_PRODUCTION,      // Đang sản xuất
-        IN_TRANSIT,         // Đang vận chuyển
-        DELIVERED,          // Đã giao hàng
-        PAID,               // Đã thanh toán đủ
-        COMPLETED,          // Hoàn thành
-        CANCELLED           // Đã hủy
+        PENDING,     // Chờ xác nhận
+        CONFIRMED,   // Đã xác nhận
+        COMPLETED,   // Hoàn thành
+        CANCELLED    // Đã hủy
     }
 }

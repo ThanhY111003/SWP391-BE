@@ -50,10 +50,6 @@ public class SecurityConfig {
                         // H2 (nếu còn dùng)
                         .requestMatchers("/h2-console/**").permitAll()
 
-                        // Public dealers
-                        .requestMatchers("/api/dealers/getAll").permitAll()
-                        .requestMatchers("/api/dealers/{dealerId}").permitAll()
-
                         // (tuỳ chọn) tránh 401 khi Spring forward tới /error
                         .requestMatchers("/error").permitAll()
 

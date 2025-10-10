@@ -27,7 +27,8 @@ public class VehicleInstance {
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
-    private VehicleStatus status = VehicleStatus.IN_PRODUCTION;
+    @Builder.Default
+    private VehicleStatus status = VehicleStatus.IN_STOCK;
 
     @Column(name = "manufacturing_date")
     private LocalDate manufacturingDate;
@@ -71,11 +72,8 @@ public class VehicleInstance {
     }
 
     public enum VehicleStatus {
-        IN_PRODUCTION,
-        IN_TRANSIT,
         IN_STOCK,
         RESERVED,
-        SOLD,
-        SCRAPPED
+        SOLD
     }
 }

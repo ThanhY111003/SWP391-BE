@@ -34,6 +34,9 @@ public class DealerLevel {
     @Column(name = "credit_limit", precision = 15, scale = 2)
     private BigDecimal creditLimit;
 
+    @Column(name = "max_installment_months")
+    private Integer maxInstallmentMonths; // Số tháng trả góp tối đa cho mỗi level
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
