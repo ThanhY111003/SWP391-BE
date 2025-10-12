@@ -17,6 +17,7 @@ public enum ErrorHandler {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy người dùng"),
     ACCOUNT_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, 400, "Tài khoản đã được xác minh"),
     INVALID_EMAIL(HttpStatus.BAD_REQUEST, 400, "Địa chỉ email không hợp lệ hoặc không tồn tại."),
+    INVALID_OLD_PASSWORD(HttpStatus.BAD_REQUEST, 400, "Mật khẩu cũ không đúng"),
     // User Errors
     ACCOUNT_NOT_VERIFIED(HttpStatus.FORBIDDEN, 403, "Tài khoản chưa được xác minh. Vui lòng kiểm tra email để xác minh tài khoản của bạn."),
     ID_NUMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Số CMND/CCCD đã tồn tại"),
@@ -27,7 +28,7 @@ public enum ErrorHandler {
     ACCOUNT_BLOCKED(HttpStatus.FORBIDDEN, 403, "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ quản trị viên để biết thêm chi tiết."),
     // Role Errors
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy vai trò"),
-
+    PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy quyền"),
     // Common/Validation Errors
     INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, 400, "Định dạng ngày sinh không hợp lệ. Vui lòng sử dụng định dạng yyyy-MM-dd"),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, "Invalid request"),
@@ -39,7 +40,28 @@ public enum ErrorHandler {
     // Dealer Errors
     DEALER_REQUIRED(HttpStatus.BAD_REQUEST, 400, "dealerId là bắt buộc đối với vai trò DEALER_MANAGER và DEALER_STAFF"),
     DEALER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy đại lý"),
-    DEALER_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 400, "Không được phép cung cấp dealerId cho vai trò EVM_STAFF");
+    DEALER_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 400, "Không được phép cung cấp dealerId cho vai trò EVM_STAFF"),
+    DEALER_LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy cấp đại lý"),
+    CODE_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Không thể tạo mã đại lý sau nhiều lần thử"),
+    DEALER_LEVEL_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Cấp đại lý với số cấp độ này đã tồn tại"),
+    DEALER_LEVEL_IN_USE(HttpStatus.BAD_REQUEST, 400, "Cấp đại lý đang được sử dụng bởi một hoặc nhiều đại lý và không thể xóa, đổi level hiện tại của đại lý trước khi xóa cấp độ này"),
+
+    // Vehicle Model Errors
+    ENGINE_NUMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Số máy đã tồn tại"),
+    VIN_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "VIN đã tồn tại"),
+    VEHICLE_MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mẫu xe"),
+    VEHICLE_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe"),
+    COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu"),
+    COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã tồn tại"),
+    VEHICLE_COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã được gán cho mẫu xe này"),
+    VEHICLE_MODEL_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Mẫu xe đã tồn tại"),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Lỗi máy chủ nội bộ"),
+
+    // Order Errors
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy đơn hàng");
+
+
+
     private final HttpStatus status;
     private final int code;
     private final String message;

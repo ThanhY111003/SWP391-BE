@@ -24,4 +24,11 @@ public class DealerRequest {
     @NotBlank(message = "Khu vực không được để trống")
     @Pattern(regexp = "^(NORTH|CENTRAL|SOUTH)$", message = "Khu vực phải là NORTH, CENTRAL hoặc SOUTH")
     private String region; // NORTH, CENTRAL, SOUTH
+
+    // ---- Thông tin cấp dealer & cha (mới thêm) ----
+    @NotNull(message = "Cấp đại lý (levelNumber) không được để trống")
+    @Min(1) @Max(99)
+    private Integer levelNumber;      // ví dụ: 1,2,3
+     // optional
+
 }

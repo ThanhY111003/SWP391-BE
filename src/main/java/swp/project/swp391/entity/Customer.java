@@ -1,17 +1,16 @@
 package swp.project.swp391.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "customers")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -20,42 +19,40 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Thông tin chuyên biệt cho khách hàng
-    @Column(name = "occupation")
-    private String occupation;
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
 
-    @Column(name = "income_level")
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "id_number", unique = true)
+    private String idNumber;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "gender")
     @Enumerated(EnumType.STRING)
-    private IncomeLevel incomeLevel;
+    private Gender gender;
 
-    public enum IncomeLevel {
-        HIGH,
-        MEDIUM,
-        LOW
-    }
+    @Column(columnDefinition = "TEXT")
+    private String address;
 
-    // ====== Audit ======
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ====== Quan hệ ======
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
-    private User user;
-
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Order> orders;
+    private List<CustomerVehicle> vehiclesPurchased;
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<TestDrive> testDrives;
-
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Feedback> feedbacks;
-
-    // ====== Lifecycle ======
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -65,5 +62,11 @@ public class Customer {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public enum Gender {
+        MALE,
+        FEMALE,
+        OTHER
     }
 }

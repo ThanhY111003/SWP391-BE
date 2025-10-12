@@ -23,7 +23,6 @@ public class UserResponse {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .active(user.getIsActive())
-                .verified(user.getIsVerified())
                 .roles(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toSet()))
                 .build();
     }
