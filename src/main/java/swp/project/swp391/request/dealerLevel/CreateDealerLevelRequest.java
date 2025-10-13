@@ -20,6 +20,10 @@ public class CreateDealerLevelRequest {
     @DecimalMax(value = "100.00", inclusive = true, message = "Tỷ lệ giảm giá không thể vượt quá 100.")
     private BigDecimal discountRate;  // Tỷ lệ giảm giá
 
+    @NotNull(message = "Tỷ lệ đặt cọc không được để trống.")
+    @DecimalMin(value = "0.00", inclusive = true, message = "Tỷ lệ đặt cọc phải lớn hơn hoặc bằng 0.")
+    private BigDecimal depositRate;
+
     @NotNull(message = "Số lượng đơn hàng tối đa không được để trống.")
     @Min(value = 1, message = "Số lượng đơn hàng tối đa phải lớn hơn hoặc bằng 1.")
     private Integer maxOrderQuantity;  // Số lượng đơn hàng tối đa

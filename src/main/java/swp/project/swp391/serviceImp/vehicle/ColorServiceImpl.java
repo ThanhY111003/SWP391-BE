@@ -6,8 +6,10 @@ import org.springframework.stereotype.Service;
 import swp.project.swp391.constant.ErrorHandler;
 import swp.project.swp391.entity.Color;
 import swp.project.swp391.entity.User;
+import swp.project.swp391.entity.VehicleModelColor;
 import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.ColorRepository;
+import swp.project.swp391.repository.VehicleModelColorRepository;
 import swp.project.swp391.request.vehicle.ColorRequest;
 import swp.project.swp391.response.vehicle.ColorResponse;
 import swp.project.swp391.security.RbacGuard;
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ColorServiceImpl implements ColorService {
-
+    private final VehicleModelColorRepository vehicleModelRepository;
     private final ColorRepository colorRepo;
     private final RbacGuard guard;
 
@@ -72,10 +74,23 @@ public class ColorServiceImpl implements ColorService {
 
         Color color = colorRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.COLOR_NOT_FOUND));
+
+        // Kiểm tra xem màu có đang được gán vào mô hình nào không
+        if (isColorAssignedToModel(color)) {
+            throw new BaseException(ErrorHandler.COLOR_ASSIGNED_TO_MODEL);
+        }
+
         color.setIsActive(false);
         colorRepo.save(color);
         return map(color);
     }
+
+    // ------------------ Helper ------------------
+// Phương thức kiểm tra màu có đang được gán vào mô hình không
+    private boolean isColorAssignedToModel(Color color) {
+        return vehicleModelRepository.existsByColor(color);
+    }
+
 
     // ------------------ REACTIVE ------------------
     @Override

@@ -13,6 +13,7 @@ public class DealerLevelResponse {
     private String levelName;             // Tên cấp độ của đại lý
     private Integer levelNumber;          // Số thứ tự cấp độ
     private BigDecimal discountRate;      // Tỷ lệ giảm giá cho DealerLevel
+    private BigDecimal depositRate;       // Tỷ lệ đặt cọc cho DealerLevel
     private Integer maxOrderQuantity;     // Số lượng đơn hàng tối đa cho cấp độ
     private BigDecimal creditLimit;       // Hạn mức tín dụng của DealerLevel
     private Integer maxInstallmentMonths; // Số tháng trả góp tối đa cho DealerLevel

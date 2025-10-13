@@ -16,6 +16,8 @@ import swp.project.swp391.response.role.RoleDetailResponse;
 import swp.project.swp391.response.role.RoleResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.role.RoleService;
+import swp.project.swp391.config.DefaultRoleConfig;
+
 
 import java.util.List;
 import java.util.Set;
@@ -28,6 +30,7 @@ public class RoleServiceImpl implements RoleService {
     private final PermissionRepository permissionRepository;
     private final RbacGuard guard;
     private final UserRepository userRepository;
+    private final DefaultRoleConfig defaultRoleConfig;
 
     private User me() {
         return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -162,17 +165,37 @@ public class RoleServiceImpl implements RoleService {
         guard.require(guard.has(currentUser, "role.reset"));
 
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + roleId));
+                .orElseThrow(() -> new BaseException(ErrorHandler.ROLE_NOT_FOUND));
 
-        // Xóa hết permissions hiện tại
+        // 1) Xóa hiện tại
         role.getPermissions().clear();
 
-        // Đánh dấu chưa custom -> restart sẽ tự động set lại từ code
+        // 2) Nạp mặc định từ code
+        List<String> defaultNames = defaultRoleConfig.getDefaultPermissions(role.getName());
+        if (defaultNames.isEmpty()) {
+            // Không có cấu hình — tùy bạn: hoặc giữ rỗng, hoặc throw cảnh báo
+            // throw new BaseException(ErrorHandler.PERMISSION_NOT_FOUND);
+        } else {
+            List<Permission> defaults = permissionRepository.findByNameIn(defaultNames);
+
+            // (tuỳ chọn) kiểm tra thiếu quyền nào trong DB
+            if (defaults.size() != defaultNames.size()) {
+                // quyền nào chưa có trong bảng permissions → báo lỗi/ghi log
+                Set<String> found = defaults.stream().map(Permission::getName).collect(Collectors.toSet());
+                List<String> missing = defaultNames.stream().filter(n -> !found.contains(n)).toList();
+                // log.warn("Missing permissions: {}", missing);
+            }
+
+            role.setPermissions(new java.util.LinkedHashSet<>(defaults));
+        }
+
+        // 3) Đánh dấu là "đúng theo mặc định"
         role.setIsCustomized(false);
 
-        Role savedRole = roleRepository.save(role);
-        return RoleDetailResponse.fromEntity(savedRole);
+        Role saved = roleRepository.save(role);
+        return RoleDetailResponse.fromEntity(saved);
     }
+
 
     @Override
     @Transactional

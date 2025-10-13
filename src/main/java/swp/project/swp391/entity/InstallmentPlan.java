@@ -123,8 +123,6 @@ public class InstallmentPlan {
             if (paidDate == null) {
                 paidDate = LocalDate.now();
             }
-        } else if (paidAmount.compareTo(BigDecimal.ZERO) > 0) {
-            status = InstallmentStatus.PARTIAL;
         } else if (isOverdue()) {
             status = InstallmentStatus.OVERDUE;
         } else {
@@ -134,7 +132,6 @@ public class InstallmentPlan {
 
     public enum InstallmentStatus {
         PENDING,    // Chờ thanh toán
-        PARTIAL,    // Đã trả một phần
         PAID,       // Đã thanh toán đủ
         OVERDUE     // Quá hạn
     }

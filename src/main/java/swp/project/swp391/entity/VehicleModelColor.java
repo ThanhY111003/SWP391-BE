@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "vehicle_model_colors",
@@ -29,6 +30,10 @@ public class VehicleModelColor {
     @JoinColumn(name = "color_id",
             foreignKey = @ForeignKey(name = "fk_vmc_color"))
     private Color color;
+
+    @OneToMany(mappedBy = "vehicleModelColor", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<VehiclePrice> vehiclePrices;
+
 
     // chênh lệch giá theo từng model–màu
     @Column(name = "price_adjustment", precision = 18, scale = 2, nullable = false)

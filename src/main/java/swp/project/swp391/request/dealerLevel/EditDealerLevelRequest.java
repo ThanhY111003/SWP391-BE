@@ -20,6 +20,10 @@ public class EditDealerLevelRequest {
     @Min(value = 1, message = "Số lượng đơn hàng tối đa phải lớn hơn hoặc bằng 1.")
     private Integer maxOrderQuantity;      // Số lượng đơn hàng tối đa (có thể sửa)
 
+    @NotNull(message = "Tỷ lệ đặt cọc không được để trống.")
+    @DecimalMin(value = "0.00", inclusive = true, message = "Tỷ lệ đặt cọc phải lớn hơn hoặc bằng 0.")
+    private BigDecimal depositRate;      // Tỷ lệ đặt cọc (có thể sửa)
+
     @NotNull(message = "Hạn mức tín dụng không được để trống.")
     @DecimalMin(value = "0.00", inclusive = true, message = "Hạn mức tín dụng phải lớn hơn hoặc bằng 0.")
     private BigDecimal creditLimit;        // Hạn mức tín dụng (có thể sửa)
