@@ -22,6 +22,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final DefaultRoleConfig defaultRoleConfig;
 
     @Override
     @Transactional
@@ -46,49 +47,18 @@ public class DataInitializer implements CommandLineRunner {
         Map<String, Permission> pMap = permissionRepository.findAll().stream()
                 .collect(Collectors.toMap(Permission::getName, p -> p));
 
-        // 3) Seed add-only nếu role CHƯA customized
         if (!Boolean.TRUE.equals(adminRole.getIsCustomized())) {
-            addOnlyAllPermissions(adminRole, pMap.values()); // ADMIN = full access (hợp nhất, không replace)
+            addOnlyAllPermissions(adminRole, pMap.values()); // ADMIN full access
         }
-
         if (!Boolean.TRUE.equals(evmStaffRole.getIsCustomized())) {
-            addOnlyByNames(evmStaffRole, pMap, List.of(
-                    "user.create", "user.read", "user.update", "user.inactive", "user.reactivate",
-                    "vehicle.create", "vehicle.read", "vehicle.update",
-                    "vehicleModel.create", "vehicleModel.update",
-                    "color.update", "color.create","color.inactive","color.reactive",
-                    "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
-                    "order.view", "order.update","order.approve",
-                    "dealer.create", "dealer.read", "dealer.update", "dealerLevel.read",
-                    "dealerLevel.create", "dealerLevel.update",
-
-                    "inventory.read",
-                    "report.read", "report.export"
-            ));
+            addOnlyByNames(evmStaffRole, pMap, defaultRoleConfig.getDefaultPermissions("EVM_STAFF"));
         }
-
         if (!Boolean.TRUE.equals(dealerManagerRole.getIsCustomized())) {
-            addOnlyByNames(dealerManagerRole, pMap, List.of(
-                    "user.create", "user.read", "user.update", "user.inactive", "user.reactivate",
-                    "order.create", "order.read", "order.update",
-                    "inventory.read",
-                    "customer.create", "customer.read", "customer.update",
-                    "vehicle.read",
-                    "vehicleModel.read",
-                    "report.read"
-            ));
+            addOnlyByNames(dealerManagerRole, pMap, defaultRoleConfig.getDefaultPermissions("DEALER_MANAGER"));
         }
-
         if (!Boolean.TRUE.equals(dealerStaffRole.getIsCustomized())) {
-            addOnlyByNames(dealerStaffRole, pMap, List.of(
-                    "order.create", "order.read",
-                    "inventory.read",
-                    "customer.create", "customer.read",
-                    "vehicle.read",
-                    "vehicleModel.read"
-            ));
+            addOnlyByNames(dealerStaffRole, pMap, defaultRoleConfig.getDefaultPermissions("DEALER_STAFF"));
         }
-
         // 4) Admin user
         createAdminUserIfNotExist();
     }
@@ -135,10 +105,15 @@ public class DataInitializer implements CommandLineRunner {
                 {"color", "reactive", "Kích hoạt màu xe", "Kích hoạt lại màu xe"},
 
                 // Order
-                {"order", "create", "Tạo đơn hàng", "Tạo đơn đặt xe"},
-                {"order", "view", "Xem đơn hàng PENDING", "Xem thông tin đơn hàng PENDING"},
                 {"order", "update", "Cập nhật đơn hàng", "Cập nhật trạng thái đơn"},
                 {"order", "approve", "Phê duyệt đơn hàng", "Phê duyệt đơn hàng từ trạng thái PENDING"},
+                {"order", "read_all_EVM", "Xem tất cả đơn hàng", "Xem tất cả đơn hàng của tất cả đại lý"},
+                {"order", "read_EVM", "Xem đơn hàng", "Xem đơn hàng cụ thể của một đại lý"},
+                {"order", "read", "Xem đơn hàng của chính mình(đại lý)", "Xem đơn hàng của đại lý hiện tại"},
+                {"order", "read_all", "Xem tất đơn hàng của chính mình(đại lý)", "Xem đơn hàng của đại lý hiện tại"},
+                {"order", "create", "Tạo đơn hàng", "Tạo yêu cầu nhập xe"},
+                {"order", "update_payment", "Cập nhật thanh toán", "Xác nhận thanh toán kỳ trả góp"},
+                {"order", "cancel", "Hủy đơn hàng", "Hủy đơn hàng đang ở trạng thái CONFIRMED"},
 
                 // Dealer
                 {"dealer", "create", "Tạo đại lý", "Thêm đại lý mới"},
@@ -149,7 +124,7 @@ public class DataInitializer implements CommandLineRunner {
 
                 {"dealerLevel", "create", "Tạo cấp độ đại lý", "Thêm cấp độ đại lý mới"},
                 {"dealerLevel", "update", "Cập nhật cấp độ đại lý", "Sửa thông tin cấp độ đại lý"},
-
+                {"dealerLevel", "delete", "Xoá cấp độ đại lý", "Xoá cấp độ đại lý"},
                 {"dealerLevel", "read", "Xem cấp độ đại lý", "Xem thông tin cấp độ"},
 
                 // Inventory (giữ nguyên chỉ read theo thiết kế hiện tại)

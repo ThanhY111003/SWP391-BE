@@ -6,7 +6,9 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "orders")
@@ -32,9 +34,10 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "deposit_amount", precision = 15, scale = 2)
+    private BigDecimal depositAmount; // Số tiền cọc (nếu trả góp)
+
     // ===== Thông tin thanh toán =====
-    @Column(name = "deposit_paid_date")
-    private LocalDate depositPaidDate; // Ngày trả cọc (chỉ dùng cho trả góp)
 
     @Column(name = "full_payment_date")
     private LocalDate fullPaymentDate; // Ngày thanh toán đầy đủ
@@ -75,57 +78,49 @@ public class Order {
     private User createdBy;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<OrderDetail> orderDetails;
+    private Set<OrderDetail> orderDetails = new HashSet<>();
 
-    // Chỉ lưu trữ InstallmentPlan khi trả góp
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<InstallmentPlan> installmentPlans;
+    private Set<InstallmentPlan> installmentPlans = new HashSet<>();
+
 
     // ===== Phương thức tính toán (KHÔNG lưu vào DB) =====
 
-    /**
-     * Tính tổng số tiền đã thanh toán
-     * - Trả thẳng: trả hết khi status = COMPLETED
-     * - Trả góp: tổng số tiền đã trả của tất cả các kỳ
-     */
+
     @Transient
     public BigDecimal getPaidAmount() {
         if (Boolean.FALSE.equals(isInstallment)) {
-            // Trả thẳng
+            // Trả thẳng: trả hết khi hoàn tất
             return (status == OrderStatus.COMPLETED) ? totalAmount : BigDecimal.ZERO;
         } else {
-            // Trả góp
-            if (installmentPlans == null || installmentPlans.isEmpty()) {
-                return BigDecimal.ZERO;
-            }
-            return installmentPlans.stream()
-                    .map(InstallmentPlan::getPaidAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // Trả góp: cọc + tổng các kỳ đã trả
+            BigDecimal paidInstallments = installmentPlans == null ? BigDecimal.ZERO :
+                    installmentPlans.stream()
+                            .map(InstallmentPlan::getPaidAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal deposit = depositAmount != null ? depositAmount : BigDecimal.ZERO;
+            return deposit.add(paidInstallments);
         }
     }
 
-    /**
-     * Tính số tiền còn lại phải trả
-     */
     @Transient
     public BigDecimal getRemainingAmount() {
         if (totalAmount == null) {
             return BigDecimal.ZERO;
         }
-        return totalAmount.subtract(getPaidAmount());
+        // Trừ tiền cọc và số tiền đã trả
+        BigDecimal remaining = totalAmount.subtract(getDepositAmount()).subtract(getPaidAmount());
+        // Đảm bảo không có giá trị âm
+        return remaining.max(BigDecimal.ZERO);
     }
 
-    /**
-     * Kiểm tra đã thanh toán đầy đủ chưa
-     */
+
     @Transient
     public boolean isFullyPaid() {
         return getRemainingAmount().compareTo(BigDecimal.ZERO) <= 0;
     }
 
-    /**
-     * Lấy % tiến độ thanh toán
-     */
     @Transient
     public BigDecimal getPaymentProgress() {
         if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) == 0) {

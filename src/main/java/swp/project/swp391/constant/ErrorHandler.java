@@ -31,7 +31,7 @@ public enum ErrorHandler {
     PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy quyền"),
     // Common/Validation Errors
     INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, 400, "Định dạng ngày sinh không hợp lệ. Vui lòng sử dụng định dạng yyyy-MM-dd"),
-    INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, "Invalid request"),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, "Yêu cầu ko hợp lệ"),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, 403, "Bạn không có quyền truy cập vào tài nguyên này"),
     FORBIDDEN(HttpStatus.FORBIDDEN, 403, "Hành động bị cấm"),
     REQUEST_OTP_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, 429, "Bạn đã yêu cầu gửi lại mã OTP quá sớm. Vui lòng thử lại sau."),
@@ -52,12 +52,22 @@ public enum ErrorHandler {
     VEHICLE_MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mẫu xe"),
     VEHICLE_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe"),
     COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu"),
+    COLOR_ASSIGNED_TO_MODEL(HttpStatus.BAD_REQUEST, 400, "Màu đang được gán vào mẫu xe,vui lòng gỡ bỏ màu khỏi các mẫu xe trước khi vô hiệu hóa"),
+    COLOR_ISACTIVE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Màu này đã bị vô hiệu hoá"),
     COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã tồn tại"),
     VEHICLE_COLOR_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Màu đã được gán cho mẫu xe này"),
     VEHICLE_MODEL_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "Mẫu xe đã tồn tại"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Lỗi máy chủ nội bộ"),
+    VEHICLE_MODEL_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe cho mẫu xe"),
 
     // Order Errors
+    ORDER_ALREADY_CANCELLED (HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã bị hủy"),
+    ORDER_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã được xử lý và không thể hủy"),
+    NOT_FOUND_INSTALLMENT_PLAN(HttpStatus.NOT_FOUND, 404, "Không tìm thấy kế hoạch trả góp"),
+    INVALID_MONTH_REQUEST(HttpStatus.BAD_REQUEST, 400, "Kỳ trả góp không thuộc đơn hàng này"),
+    WASPAIDED_REQUEST(HttpStatus.BAD_REQUEST, 400, "Kỳ trả góp đã được thanh toán"),
+    INVALID_INSTALLMENT_REQUEST(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể thực hiện hành động này trên các đơn hàng trả góp"),
+    ONLY_CONFIRMED_REQUEST(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể thực hiện hành động này trên các đơn hàng ở trạng thái CONFIRMED"),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy đơn hàng");
 
 

@@ -10,5 +10,5 @@ public class OrderApproveResponse {
     private Long orderId;
     private String orderCode;
     private String status; // CONFIRMED
-    private int totalInstancesCreated; // số xe đã tạo & nhập vào dealer
+    private int created;  // số xe đã tạo & nhập vào dealer
 }

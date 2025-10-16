@@ -41,6 +41,7 @@ public class DealerLevelServiceImpl implements DealerLevelService {
         dealerLevel.setDiscountRate(request.getDiscountRate());
         dealerLevel.setMaxOrderQuantity(request.getMaxOrderQuantity());
         dealerLevel.setCreditLimit(request.getCreditLimit());
+        dealerLevel.setDepositRate(request.getDepositRate());
         dealerLevel.setMaxInstallmentMonths(request.getMaxInstallmentMonths());
         dealerLevel.setDescription(request.getDescription());
 
@@ -64,6 +65,7 @@ public class DealerLevelServiceImpl implements DealerLevelService {
         dealerLevel.setDiscountRate(request.getDiscountRate());
         dealerLevel.setMaxOrderQuantity(request.getMaxOrderQuantity());
         dealerLevel.setCreditLimit(request.getCreditLimit());
+        dealerLevel.setDepositRate(request.getDepositRate());
         dealerLevel.setMaxInstallmentMonths(request.getMaxInstallmentMonths());
         dealerLevel.setDescription(request.getDescription());
 
@@ -76,7 +78,7 @@ public class DealerLevelServiceImpl implements DealerLevelService {
     @Override
     public List<DealerLevelResponse> getAllDealerLevels() {
         // Kiểm tra quyền xem tất cả Dealer Levels
-        guard.require(guard.has(guard.me(), "dealerLevel.read.all"));
+        guard.require(guard.has(guard.me(), "dealerLevel.read"));
 
         List<DealerLevel> dealerLevels = dealerLevelRepository.findAll();
         return dealerLevels.stream()
@@ -105,7 +107,7 @@ public class DealerLevelServiceImpl implements DealerLevelService {
 
         // Kiểm tra nếu có đại lý nào đang sử dụng DealerLevel này
         if (!dealerLevel.getDealers().isEmpty()) {
-            throw new BaseException(ErrorHandler.DEALER_LEVEL_IN_USE, "Không thể xóa cấp độ đại lý đang được sử dụng.");
+            throw new BaseException(ErrorHandler.DEALER_LEVEL_IN_USE);
         }
 
         dealerLevelRepository.delete(dealerLevel);
@@ -117,6 +119,7 @@ public class DealerLevelServiceImpl implements DealerLevelService {
                 dealerLevel.getLevelName(),
                 dealerLevel.getLevelNumber(),
                 dealerLevel.getDiscountRate(),
+                dealerLevel.getDepositRate(),
                 dealerLevel.getMaxOrderQuantity(),
                 dealerLevel.getCreditLimit(),
                 dealerLevel.getMaxInstallmentMonths(),
@@ -124,3 +127,4 @@ public class DealerLevelServiceImpl implements DealerLevelService {
         );
     }
 }
+

@@ -1,4 +1,3 @@
-// service/order/OrderApprovalService.java
 package swp.project.swp391.service.order;
 
 import swp.project.swp391.entity.User;

@@ -28,10 +28,13 @@ public class DealerLevel {
     @Column(name = "discount_rate", precision = 5, scale = 2)
     private BigDecimal discountRate;
 
+    @Column(name = "deposit_rate", precision = 5, scale = 4)
+    private BigDecimal depositRate; // Tỷ lệ đặt cọc (0.3 = 30%)
+
     @Column(name = "max_order_quantity")
     private Integer maxOrderQuantity;
 
-    @Column(name = "credit_limit", precision = 15, scale = 2)
+    @Column(name = "credit_limit", precision = 20, scale = 2)
     private BigDecimal creditLimit;
 
     @Column(name = "max_installment_months")

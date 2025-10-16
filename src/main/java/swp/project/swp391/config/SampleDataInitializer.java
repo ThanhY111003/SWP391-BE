@@ -9,6 +9,7 @@ import swp.project.swp391.entity.*;
 import swp.project.swp391.repository.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -54,10 +55,13 @@ public class SampleDataInitializer implements CommandLineRunner {
         DealerLevel level1 = DealerLevel.builder()
                 .levelName("Level 1")
                 .levelNumber(1)
-                .discountRate(new BigDecimal("10.00"))
+                .
+                discountRate(new BigDecimal("10.00"))
                 .maxOrderQuantity(100)
-                .creditLimit(new BigDecimal("10000000000")) // 10 tỷ
+                .creditLimit(new BigDecimal("100000000000")) // 100 tỷ
                 .description("Đại lý cấp 1")
+                .depositRate(new BigDecimal("0.3")) //
+                .maxInstallmentMonths(12)
                 .isActive(true)
                 .build();
         dealerLevelRepository.save(level1);
@@ -67,8 +71,10 @@ public class SampleDataInitializer implements CommandLineRunner {
                 .levelNumber(2)
                 .discountRate(new BigDecimal("5.00"))
                 .maxOrderQuantity(50)
-                .creditLimit(new BigDecimal("5000000000")) // 5 tỷ
+                .creditLimit(new BigDecimal("50000000000")) // 50 tỷ
                 .description("Đại lý cấp 2")
+                .depositRate(new BigDecimal("0.25")) //
+                .maxInstallmentMonths(6) //
                 .isActive(true)
                 .build();
         dealerLevelRepository.save(level2);
@@ -78,8 +84,10 @@ public class SampleDataInitializer implements CommandLineRunner {
                 .levelNumber(3)
                 .discountRate(BigDecimal.ZERO)
                 .maxOrderQuantity(20)
-                .creditLimit(new BigDecimal("2000000000")) // 2 tỷ
+                .creditLimit(new BigDecimal("20000000000")) // 20 tỷ
                 .description("Đại lý cấp 3")
+                .depositRate(new BigDecimal("0.2")) //
+                .maxInstallmentMonths(3) //
                 .isActive(true)
                 .build();
         dealerLevelRepository.save(level3);
@@ -238,29 +246,43 @@ public class SampleDataInitializer implements CommandLineRunner {
 
         System.out.println(">>> Initializing Vehicle Prices...");
 
-        List<VehicleModel> models = vehicleModelRepository.findAll();
+        List<VehicleModelColor> colorList = vehicleModelColorRepository.findAll();
         List<DealerLevel> levels = dealerLevelRepository.findAll();
 
-        for (VehicleModel model : models) {
+        for (VehicleModelColor color : colorList) {
+            VehicleModel model = color.getVehicleModel();
+
+            // base = giá hãng + điều chỉnh màu
+            BigDecimal basePrice = model.getManufacturerPrice();
+            BigDecimal colorAdj = (color.getPriceAdjustment() == null) ? BigDecimal.ZERO : color.getPriceAdjustment();
+            BigDecimal colorBase = basePrice.add(colorAdj);
+
             for (DealerLevel level : levels) {
-                BigDecimal basePrice = model.getManufacturerPrice();
-                BigDecimal markup = basePrice.multiply(level.getDiscountRate()).divide(new BigDecimal("100"));
-                BigDecimal wholesalePrice = basePrice.add(markup);
+                BigDecimal discountRate = level.getDiscountRate();
+                if (discountRate == null) discountRate = BigDecimal.ZERO;
+
+                // Tính đúng hướng giảm giá cho dealer
+                BigDecimal wholesalePrice = colorBase
+                        .multiply(BigDecimal.ONE.subtract(discountRate.divide(BigDecimal.valueOf(100))))
+                        .setScale(2, RoundingMode.HALF_UP);
 
                 VehiclePrice price = VehiclePrice.builder()
-                        .vehicleModel(model)
+                        .vehicleModelColor(color)
                         .dealerLevel(level)
                         .wholesalePrice(wholesalePrice)
                         .effectiveFrom(LocalDate.of(2024, 1, 1))
                         .effectiveTo(null)
                         .isActive(true)
                         .build();
+
                 vehiclePriceRepository.save(price);
             }
         }
 
-        System.out.println(">>> Created Vehicle Prices for all levels!");
+        System.out.println(">>> Created Vehicle Prices for all colors & levels!");
     }
+
+
 
     @Transactional
     protected void initializeSampleCustomers() {
