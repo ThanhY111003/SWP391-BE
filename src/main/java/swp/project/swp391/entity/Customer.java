@@ -44,6 +44,10 @@ public class Customer {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /** Trạng thái hoạt động của khách hàng */
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -57,6 +61,7 @@ public class Customer {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (isActive == null) isActive = true; // đảm bảo mặc định luôn là true
     }
 
     @PreUpdate

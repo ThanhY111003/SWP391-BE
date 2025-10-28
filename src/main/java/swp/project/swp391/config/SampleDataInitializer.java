@@ -7,11 +7,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import swp.project.swp391.entity.*;
 import swp.project.swp391.repository.*;
-
+import org.springframework.core.annotation.Order;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Sample data initializer - CHỈ chạy trong môi trường dev/local
@@ -20,6 +21,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Profile("!prod") // Chạy khi KHÔNG phải production
+@Order(2)
 public class SampleDataInitializer implements CommandLineRunner {
     private final DealerLevelRepository dealerLevelRepository;
     private final DealerRepository dealerRepository;
@@ -28,6 +30,10 @@ public class SampleDataInitializer implements CommandLineRunner {
     private final VehicleModelColorRepository vehicleModelColorRepository;
     private final VehiclePriceRepository vehiclePriceRepository;
     private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
 
     @Override
     @Transactional
@@ -39,6 +45,7 @@ public class SampleDataInitializer implements CommandLineRunner {
         initializeVehicleModels();
         initializeVehiclePrices();
         initializeSampleCustomers();
+        initializeDealerAccounts();
 
         System.out.println("========== Sample Data Initialization Completed ==========");
     }
@@ -55,7 +62,7 @@ public class SampleDataInitializer implements CommandLineRunner {
         DealerLevel level1 = DealerLevel.builder()
                 .levelName("Level 1")
                 .levelNumber(1)
-                .
+                        .
                 discountRate(new BigDecimal("10.00"))
                 .maxOrderQuantity(100)
                 .creditLimit(new BigDecimal("100000000000")) // 100 tỷ
@@ -317,5 +324,59 @@ public class SampleDataInitializer implements CommandLineRunner {
         customerRepository.save(c2);
 
         System.out.println(">>> Created 2 Sample Customers!");
+    }
+    @Transactional
+    protected void initializeDealerAccounts() {
+        System.out.println(">>> Initializing Dealer Accounts...");
+
+        // 1️⃣ Lấy dealer Hà Nội (đại lý cấp 1)
+        Dealer dealerHN = dealerRepository.findByCode("DL-HN-001")
+                .orElseThrow(() -> new IllegalStateException("Dealer Hà Nội not found"));
+
+        // 2️⃣ Lấy role — đảm bảo role đã có
+        Role dealerManagerRole = roleRepository.findByName("DEALER_MANAGER")
+                .orElseThrow(() -> new IllegalStateException("Role DEALER_MANAGER not found"));
+        Role dealerStaffRole = roleRepository.findByName("DEALER_STAFF")
+                .orElseThrow(() -> new IllegalStateException("Role DEALER_STAFF not found"));
+
+        // 3️⃣ Dealer Manager (nếu chưa có)
+        if (userRepository.findByUsername("dathoang03").isEmpty()) {
+            User manager = User.builder()
+                    .username("dathoang03")
+                    .password(passwordEncoder.encode("dathoang03"))
+                    .fullName("Đạt Hoàng (Dealer Manager)")
+                    .email("dathoang03@vinfast.vn")
+                    .phoneNumber("0903000003")
+                    .gender(User.Gender.MALE)
+                    .dealer(dealerHN)
+                    .roles(Set.of(dealerManagerRole))
+                    .isActive(true)
+                    .build();
+            userRepository.save(manager);
+            System.out.println(">>> Created Dealer Manager account (dathoang03 / dathoang03)");
+        } else {
+            System.out.println(">>> Dealer Manager account already exists, skipping...");
+        }
+
+        // 4️⃣ Dealer Staff (nếu chưa có)
+        if (userRepository.findByUsername("dathoang04").isEmpty()) {
+            User staff = User.builder()
+                    .username("dathoang04")
+                    .password(passwordEncoder.encode("dathoang04"))
+                    .fullName("Đạt Hoàng (Dealer Staff)")
+                    .email("dathoang04@vinfast.vn")
+                    .phoneNumber("0904000004")
+                    .gender(User.Gender.MALE)
+                    .dealer(dealerHN)
+                    .roles(Set.of(dealerStaffRole))
+                    .isActive(true)
+                    .build();
+            userRepository.save(staff);
+            System.out.println(">>> Created Dealer Staff account (dathoang04 / dathoang04)");
+        } else {
+            System.out.println(">>> Dealer Staff account already exists, skipping...");
+        }
+
+        System.out.println(">>> Dealer Accounts initialized successfully!");
     }
 }

@@ -9,8 +9,23 @@ import java.util.Optional;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
-    Optional<Customer> findByIdNumber(String idNumber);
+
+    /** Tìm khách hàng theo số điện thoại */
     Optional<Customer> findByPhoneNumber(String phoneNumber);
-    Optional<Customer> findByEmail(String email);
-    List<Customer> findByFullNameContainingIgnoreCase(String fullName);
+
+    /** Tìm khách hàng theo CCCD/CMND */
+    Optional<Customer> findByIdNumber(String idNumber);
+
+    /** Kiểm tra tồn tại theo số điện thoại */
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    /** Kiểm tra tồn tại theo CCCD/CMND */
+    boolean existsByIdNumber(String idNumber);
+
+    /** Tìm tất cả khách hàng có tên chứa chuỗi (ignore case) */
+    List<Customer> findByFullNameContainingIgnoreCase(String name);
+
+    /** Tìm tất cả khách hàng có số điện thoại chứa chuỗi */
+    List<Customer> findByPhoneNumberContaining(String phone);
+
 }

@@ -20,4 +20,7 @@ public interface DealerRepository extends JpaRepository<Dealer, Long> {
     Optional<Dealer> findByIdAndIsActive(Long id, Boolean isActive);
 
     boolean existsByCode(String code);
+
+    Optional<Dealer> findByCode(String code);
 }
+
