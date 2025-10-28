@@ -16,13 +16,14 @@ public class DefaultRoleConfig {
             ),
             "EVM_STAFF", List.of(
                     "user.create","user.read","user.update","user.inactive","user.reactivate",
-                    "vehicle.create","vehicle.read","vehicle.update",
+                    "vehicle.read", "vehicle.read_all", "vehicle.assign_customer", "vehicle.deactive", "vehicle.active","vehicle.update_status",
                     "vehicleModel.create","vehicleModel.update",
                     "color.update","color.create","color.inactive","color.reactive",
                     "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
                     "order.approve","order.update_payment","order.read_EVM","order.read_all_EVM","order.cancel",
                     "dealer.create","dealer.read","dealer.update",
                     "dealerLevel.read","dealerLevel.create","dealerLevel.update","dealerLevel.delete",
+                    "customer.create","customer.read","customer.update","customer.activate","customer.deactivate",
                     "inventory.read","report.read","report.export"
             ),
             "DEALER_MANAGER", List.of(

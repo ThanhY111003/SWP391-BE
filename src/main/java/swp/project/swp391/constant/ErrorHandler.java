@@ -60,6 +60,17 @@ public enum ErrorHandler {
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Lỗi máy chủ nội bộ"),
     VEHICLE_MODEL_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe cho mẫu xe"),
 
+    // Vehicle Instance Errors
+    VEHICLE_INSTANCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy xe"),
+    VEHICLE_ALREADY_SOLD(HttpStatus.BAD_REQUEST, 400, "Xe đã được bán cho khách khác"),
+    VEHICLE_ALREADY_ASSIGNED(HttpStatus.BAD_REQUEST, 400, "Xe này đã được gán cho khách hàng"),
+    VEHICLE_NOT_ELIGIBLE_DELETE(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể xóa xe còn trong kho"),
+    CUSTOMER_VEHICLE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy bản ghi bán xe cho khách hàng"),
+    VEHICLE_IS_INACTIVE(HttpStatus.BAD_REQUEST, 400, "Xe đã bị vô hiệu hóa, không thể gán cho khách hàng"),
+    ONLY_IN_STOCK_CAN_DEACTIVATE(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể vô hiệu hóa xe đang trong kho (IN_STOCK)"),
+    VEHICLE_ALREADY_ACTIVE(HttpStatus.BAD_REQUEST, 400, "Xe đã đang ở trạng thái hoạt động"),
+    VEHICLE_WAS_SOLDED(HttpStatus.BAD_REQUEST, 400, "Xe đã được bán, không thể thay đổi trạng thái"),
+
     // Order Errors
     ORDER_ALREADY_CANCELLED (HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã bị hủy"),
     ORDER_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã được xử lý và không thể hủy"),

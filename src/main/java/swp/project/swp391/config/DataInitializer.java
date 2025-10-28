@@ -2,6 +2,7 @@ package swp.project.swp391.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -85,8 +87,12 @@ public class DataInitializer implements CommandLineRunner {
                 {"permission", "read", "Xem permission", "Xem danh sách quyền"},
 
                 // Vehicle Instance
-                {"vehicle", "create", "Tạo xe", "Thêm xe vào hệ thống"},
-                {"vehicle", "update", "Cập nhật xe", "Sửa thông tin xe"},
+                {"vehicle", "read", "Xem xe", "Xem thông tin xe"},
+                {"vehicle", "read_all", "Xem tất cả xe", "Xem thông tin tất xe"},
+                {"vehicle", "update_status", "Cập nhật trạng thái xe", "Cập nhật trạng thái xe (IN_STOCK ↔ RESERVED)"},
+                {"vehicle", "deactive", "Vô hiệu hoá xe", "Vô hiệu hoá xe"},
+                {"vehicle", "active", "Kích hoạt xe", "Kích hoạt lại xe"},
+                {"vehicle", "assign_customer", "Gán xe cho khách hàng", "Gán xe cho khách hàng"},
 
                 // Vehicle Model Color
                 {"vehicleModelColor", "create", "Gán màu xe", "Gán màu cho mẫu xe"},
@@ -134,6 +140,8 @@ public class DataInitializer implements CommandLineRunner {
                 {"customer", "create", "Tạo khách hàng", "Thêm thông tin khách hàng"},
                 {"customer", "read", "Xem khách hàng", "Xem thông tin khách hàng"},
                 {"customer", "update", "Cập nhật khách hàng", "Sửa thông tin khách hàng"},
+                {"customer", "activate", "activate khách hàng ", "activate khách hàng"},
+                {"customer", "deactivate", "deactivate khách hàng", "deactivate khách hàng"},
 
                 // Report
                 {"report", "read", "Xem báo cáo", "Xem các báo cáo"},
