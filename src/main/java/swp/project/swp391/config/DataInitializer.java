@@ -75,6 +75,7 @@ public class DataInitializer implements CommandLineRunner {
                 {"user", "update", "Cập nhật người dùng", "Sửa thông tin người dùng"},
                 {"user", "inactive", "Vô hiệu hoá người dùng", "Vô hiệu hoá người dùng"},
                 {"user", "reactivate", "Kích hoạt người dùng", "Kích hoạt người dùng"},
+                {"user", "assignDealer", "Gán user vào dealer", "Gán user vào dealer"},
 
                 // Role
                 {"role", "read", "Xem role", "Xem thông tin role"},
