@@ -1,6 +1,7 @@
 package swp.project.swp391.controller.vehicle;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,72 +18,64 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/vehicle-models/{modelId}/colors")
 @RequiredArgsConstructor
+@Tag(name = "Quản lý màu xe theo Model", description = "Các API cho phép gán, chỉnh sửa và quản lý màu sắc của từng model xe")
 public class VehicleModelColorController {
 
     private final VehicleModelColorService service;
     private final RbacGuard guard;
 
-    // --------------------------------------------------------
-    // ASSIGN COLOR TO MODEL
-    // --------------------------------------------------------
     @Operation(
             summary = "Gán màu vào model xe",
             description = """
                 Dành cho ADMIN hoặc EVM_STAFF có quyền 'vehicleModelColor.create'.
-                Cho phép gán 1 màu có sẵn trong catalog vào model cụ thể,
-                với mức chênh lệch giá tùy chọn.
+                Cho phép gán màu sẵn trong catalog vào model cụ thể, kèm chênh lệch giá tùy chọn.
                 """
     )
-    @PostMapping("/{colorId}/assign")
+    @PostMapping
     public ResponseEntity<ApiResponse<VehicleModelColorResponse>> assignColor(
             @PathVariable Long modelId,
-            @PathVariable Long colorId,
+            @RequestParam Long colorId,
             @RequestParam(defaultValue = "0") BigDecimal priceAdjustment) {
 
         User currentUser = guard.me();
-        VehicleModelColorResponse response = service.assignColorToModel(modelId, colorId, priceAdjustment, currentUser);
+        VehicleModelColorResponse response =
+                service.assignColorToModel(modelId, colorId, priceAdjustment, currentUser);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response, "Gán màu cho model thành công."));
+                .body(ApiResponse.ok(response, "Gán màu cho model thành công"));
     }
 
-    // --------------------------------------------------------
-    // GET COLORS OF MODEL
-    // --------------------------------------------------------
-    @Operation(summary = "Lấy danh sách màu của model cụ thể")
+    @Operation(summary = "Lấy danh sách màu của model", description = "Trả về danh sách màu đã gán cho một model cụ thể")
     @GetMapping
     public ResponseEntity<ApiResponse<List<VehicleModelColorResponse>>> getColorsByModel(
             @PathVariable Long modelId) {
+
         List<VehicleModelColorResponse> list = service.getColorsByModel(modelId);
-        return ResponseEntity.ok(ApiResponse.ok(list, "Lấy danh sách màu của model thành công."));
+        return ResponseEntity.ok(ApiResponse.ok(list, "Lấy danh sách màu của model thành công"));
     }
 
-    // --------------------------------------------------------
-    // UPDATE PRICE ADJUSTMENT
-    // --------------------------------------------------------
-    @Operation(summary = "Cập nhật chênh lệch giá của màu trên model")
-    @PutMapping("/{colorId}/price-adjustment")
+    @Operation(summary = "Cập nhật chênh lệch giá của màu", description = "Cập nhật phần chênh lệch giá cho một màu đã gán với model cụ thể")
+    @PatchMapping("/{colorId}/price-adjustment")
     public ResponseEntity<ApiResponse<VehicleModelColorResponse>> updatePriceAdjustment(
             @PathVariable Long modelId,
             @PathVariable Long colorId,
             @RequestParam BigDecimal newAdjustment) {
 
         User currentUser = guard.me();
-        VehicleModelColorResponse response = service.updatePriceAdjustment(modelId, colorId, newAdjustment, currentUser);
-        return ResponseEntity.ok(ApiResponse.ok(response, "Cập nhật chênh lệch giá thành công."));
+        VehicleModelColorResponse response =
+                service.updatePriceAdjustment(modelId, colorId, newAdjustment, currentUser);
+
+        return ResponseEntity.ok(ApiResponse.ok(response, "Cập nhật chênh lệch giá thành công"));
     }
 
-    // --------------------------------------------------------
-    // UNASSIGN COLOR
-    // --------------------------------------------------------
-    @Operation(summary = "Xóa gán màu khỏi model (unassign)")
-    @DeleteMapping("/{colorId}/unassign")
+    @Operation(summary = "Gỡ màu khỏi model", description = "Xóa quan hệ giữa model và màu cụ thể, yêu cầu quyền 'vehicleModelColor.delete'")
+    @DeleteMapping("/{colorId}")
     public ResponseEntity<ApiResponse<Void>> unassignColor(
             @PathVariable Long modelId,
             @PathVariable Long colorId) {
 
         User currentUser = guard.me();
         service.unassignColor(modelId, colorId, currentUser);
-        return ResponseEntity.ok(ApiResponse.ok(null, "Gỡ màu khỏi model thành công."));
+        return ResponseEntity.ok(ApiResponse.okMsg("Gỡ màu khỏi model thành công"));
     }
 }
