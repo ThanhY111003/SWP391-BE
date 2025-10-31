@@ -21,7 +21,7 @@ public class DefaultRoleConfig {
                     "color.update","color.create","color.inactive","color.reactive",
                     "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
                     "order.approve","order.update_payment","order.read_EVM","order.read_all_EVM","order.cancel",
-                    "dealer.create","dealer.read","dealer.update",
+                    "dealer.create","dealer.read","dealer.update","dealer.read.all","dealer.inactive","dealer.reactivate",
                     "dealerLevel.read","dealerLevel.create","dealerLevel.update","dealerLevel.delete",
                     "customer.create","customer.read","customer.update","customer.activate","customer.deactivate",
                     "inventory.read","report.read","report.export"
