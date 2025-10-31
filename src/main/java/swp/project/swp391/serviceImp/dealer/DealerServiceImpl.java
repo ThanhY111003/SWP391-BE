@@ -186,7 +186,8 @@ public class DealerServiceImpl implements DealerService {
                 d.getPhoneNumber(),
                 d.getEmail(),
                 d.getIsActive(),
-                d.getRegion().name()
+                d.getRegion().name(),
+                d.getLevel() != null ? d.getLevel().getId() : null
         );
     }
 
