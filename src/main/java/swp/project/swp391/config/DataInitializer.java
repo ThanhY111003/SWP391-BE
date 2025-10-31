@@ -132,6 +132,7 @@ public class DataInitializer implements CommandLineRunner {
                 {"dealer", "update", "Cập nhật đại lý", "Sửa thông tin đại lý"},
                 {"dealer", "inactive", "Vô hiệu hoá đại lý", "Vô hiệu hoá đại lý"},
                 {"dealer", "reactivate", "Kích hoạt đại lý", "Kích hoạt lại đại lý"},
+                {"dealer", "read.all", "Xem đại lý", "Xem thông tin đại lý"},
 
                 {"dealerLevel", "create", "Tạo cấp độ đại lý", "Thêm cấp độ đại lý mới"},
                 {"dealerLevel", "update", "Cập nhật cấp độ đại lý", "Sửa thông tin cấp độ đại lý"},
