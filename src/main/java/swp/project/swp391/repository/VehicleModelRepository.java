@@ -11,8 +11,4 @@ import java.util.Optional;
 public interface VehicleModelRepository extends JpaRepository<VehicleModel, Long> {
     Optional<VehicleModel> findByModelCode(String modelCode);
     List<VehicleModel> findByIsActiveTrue();
-    List<VehicleModel> findByBrand(String brand);
-    List<VehicleModel> findByYear(Integer year);
-    List<VehicleModel> findByIsActive(Boolean isActive);
-
 }

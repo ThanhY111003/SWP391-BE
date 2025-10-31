@@ -18,6 +18,8 @@ import swp.project.swp391.repository.RoleRepository;
 import swp.project.swp391.repository.UserRepository;
 import swp.project.swp391.repository.VerificationTokenRepository;
 import swp.project.swp391.request.user.CreateUserRequest;
+import swp.project.swp391.request.user.UpdateUserProfileRequest;
+import swp.project.swp391.response.user.UserDetailResponse;
 import swp.project.swp391.response.user.UserResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.user.UserService;
@@ -193,16 +195,44 @@ public class UserServiceImpl implements UserService {
         User target = userRepository.findById(userId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
 
-        boolean isAdmin = target.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
-        if (isAdmin) {
-            throw new BaseException(ErrorHandler.FORBIDDEN);
+        String currentRole = currentUser.getRoles().iterator().next().getName();
+        String targetRole = target.getRoles().iterator().next().getName();
+
+        // === 1️⃣ ADMIN: được phép vô hiệu hóa tất cả ===
+        if ("ADMIN".equals(currentRole)) {
+            // không giới hạn
+        }
+        // === 2️⃣ EVM_STAFF: chỉ được vô hiệu hóa DEALER_MANAGER & DEALER_STAFF ===
+        else if ("EVM_STAFF".equals(currentRole)) {
+            if (!targetRole.equals("DEALER_MANAGER") && !targetRole.equals("DEALER_STAFF")) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "EVM_STAFF chỉ được vô hiệu hóa user đại lý");
+            }
+        }
+        // === 3️⃣ DEALER_MANAGER: chỉ được vô hiệu hóa DEALER_STAFF trong đại lý mình ===
+        else if ("DEALER_MANAGER".equals(currentRole)) {
+            if (!"DEALER_STAFF".equals(targetRole)) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "DEALER_MANAGER chỉ được vô hiệu hóa nhân viên trong đại lý");
+            }
+            if (target.getDealer() == null ||
+                    currentUser.getDealer() == null ||
+                    !target.getDealer().getId().equals(currentUser.getDealer().getId())) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ được vô hiệu hóa nhân viên trong đại lý của bạn");
+            }
+        }
+        // === 4️⃣ DEALER_STAFF: không được quyền ===
+        else {
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Không có quyền vô hiệu hóa người dùng khác");
         }
 
         target.setIsActive(false);
         userRepository.save(target);
 
+        log.info("User {} (role: {}) vô hiệu hóa user {} (role: {})",
+                currentUser.getUsername(), currentRole, target.getUsername(), targetRole);
+
         return ApiResponse.okMsg("User đã bị vô hiệu hóa thành công");
     }
+
 
     @Override
     @Transactional
@@ -213,25 +243,258 @@ public class UserServiceImpl implements UserService {
         User target = userRepository.findById(userId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
 
+        String currentRole = currentUser.getRoles().iterator().next().getName();
+        String targetRole = target.getRoles().iterator().next().getName();
+
+        // === 1️⃣ ADMIN: được phép kích hoạt tất cả ===
+        if ("ADMIN".equals(currentRole)) {
+            // no restriction
+        }
+        // === 2️⃣ EVM_STAFF: chỉ được kích hoạt DEALER_MANAGER & DEALER_STAFF ===
+        else if ("EVM_STAFF".equals(currentRole)) {
+            if (!targetRole.equals("DEALER_MANAGER") && !targetRole.equals("DEALER_STAFF")) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "EVM_STAFF chỉ được kích hoạt user đại lý");
+            }
+        }
+        // === 3️⃣ DEALER_MANAGER: chỉ được kích hoạt DEALER_STAFF trong đại lý mình ===
+        else if ("DEALER_MANAGER".equals(currentRole)) {
+            if (!"DEALER_STAFF".equals(targetRole)) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "DEALER_MANAGER chỉ được kích hoạt nhân viên trong đại lý");
+            }
+            if (target.getDealer() == null ||
+                    currentUser.getDealer() == null ||
+                    !target.getDealer().getId().equals(currentUser.getDealer().getId())) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ được kích hoạt nhân viên trong đại lý của bạn");
+            }
+        }
+        // === 4️⃣ DEALER_STAFF: không được quyền ===
+        else {
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Không có quyền kích hoạt người dùng khác");
+        }
+
         target.setIsActive(true);
         userRepository.save(target);
+
+        log.info("User {} (role: {}) kích hoạt user {} (role: {})",
+                currentUser.getUsername(), currentRole, target.getUsername(), targetRole);
 
         return ApiResponse.okMsg("User đã được kích hoạt lại thành công");
     }
 
+
     @Override
-    @Transactional(Transactional.TxType.SUPPORTS) // tương đương readOnly với jakarta.transaction
+    @Transactional(Transactional.TxType.SUPPORTS)
     public ApiResponse<List<UserResponse>> getAllUsers() {
         User currentUser = me();
         guard.require(guard.has(currentUser, "user.read"));
 
-        List<UserResponse> data = userRepository.findAll()
-                .stream()
+        // Tên role chính của người đang đăng nhập
+        String currentRole = currentUser.getRoles().iterator().next().getName();
+
+        List<User> users = userRepository.findAll();
+
+        // === ADMIN: thấy tất cả ===
+        if ("ADMIN".equals(currentRole)) {
+            // full access
+        }
+
+        // === EVM_STAFF: thấy tất cả trừ ADMIN ===
+        else if ("EVM_STAFF".equals(currentRole)) {
+            users = users.stream()
+                    .filter(u -> u.getRoles().stream()
+                            .noneMatch(r -> "ADMIN".equals(r.getName())))
+                    .toList();
+        }
+
+        // === DEALER_MANAGER: chỉ thấy user cùng dealer ===
+        else if ("DEALER_MANAGER".equals(currentRole)) {
+            Long dealerId = currentUser.getDealer() != null ? currentUser.getDealer().getId() : null;
+            users = users.stream()
+                    .filter(u -> u.getDealer() != null && u.getDealer().getId().equals(dealerId))
+                    .toList();
+        }
+
+        // === DEALER_STAFF: không có quyền xem danh sách user ===
+        else {
+            throw new BaseException(ErrorHandler.FORBIDDEN);
+        }
+
+        List<UserResponse> data = users.stream()
                 .map(UserResponse::fromEntity)
                 .toList();
 
         return ApiResponse.ok(data);
     }
+
+
+    @Override
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public ApiResponse<UserDetailResponse> getUserById(Long id) {
+        User currentUser = me();
+        guard.require(guard.has(currentUser, "user.read"));
+
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
+
+        String currentRole = currentUser.getRoles().iterator().next().getName();
+        String targetRole = target.getRoles().iterator().next().getName();
+
+        // === EVM_STAFF không được xem ADMIN ===
+        if ("EVM_STAFF".equals(currentRole) && "ADMIN".equals(targetRole)) {
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Không thể xem thông tin ADMIN");
+        }
+
+        // === DEALER_MANAGER chỉ được xem user trong dealer của mình ===
+        if ("DEALER_MANAGER".equals(currentRole)) {
+            if (target.getDealer() == null ||
+                    currentUser.getDealer() == null ||
+                    !target.getDealer().getId().equals(currentUser.getDealer().getId())) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ được xem user trong đại lý của bạn");
+            }
+        }
+
+        // === DEALER_STAFF không được xem chi tiết user khác ===
+        if ("DEALER_STAFF".equals(currentRole)) {
+            if (!currentUser.getId().equals(target.getId())) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Không có quyền xem thông tin người khác");
+            }
+        }
+
+        return ApiResponse.ok(UserDetailResponse.fromEntity(target));
+    }
+
+
+    @Override
+    @Transactional(Transactional.TxType.REQUIRED)
+    public ApiResponse<UserDetailResponse> getMyProfile() {
+        User currentUser = me();
+
+        // load lại user có dealer đầy đủ
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
+
+        return ApiResponse.ok(UserDetailResponse.fromEntity(user));
+    }
+
+    @Override
+    @Transactional
+    public ApiResponse<UserDetailResponse> updateMyProfile(UpdateUserProfileRequest req) {
+        User currentUser = me();
+        String role = currentUser.getRoles().iterator().next().getName();
+
+        // Admin không được chỉnh profile cá nhân
+        if ("ADMIN".equals(role)) {
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Admin không được chỉnh sửa thông tin cá nhân");
+        }
+
+        User managedUser = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
+
+        // 🔹 Check trùng email, phone, idNumber (trừ chính mình)
+        userRepository.findByEmail(req.getEmail())
+                .filter(u -> !u.getId().equals(managedUser.getId()))
+                .ifPresent(u -> { throw new BaseException(ErrorHandler.EMAIL_ALREADY_EXISTS); });
+
+        userRepository.findByPhoneNumber(req.getPhoneNumber())
+                .filter(u -> !u.getId().equals(managedUser.getId()))
+                .ifPresent(u -> { throw new BaseException(ErrorHandler.PHONE_NUMBER_ALREADY_EXISTS); });
+
+        userRepository.findByIdNumber(req.getIdNumber())
+                .filter(u -> !u.getId().equals(managedUser.getId()))
+                .ifPresent(u -> { throw new BaseException(ErrorHandler.ID_NUMBER_ALREADY_EXISTS); });
+
+        // Cập nhật thông tin
+        updateAllowedFields(managedUser, req);
+        userRepository.save(managedUser);
+
+        // Ép load dealer (tránh LazyInitializationException)
+        if (managedUser.getDealer() != null) managedUser.getDealer().getName();
+
+        return ApiResponse.ok(UserDetailResponse.fromEntity(managedUser));
+    }
+
+
+    @Override
+    @Transactional
+    public ApiResponse<UserDetailResponse> updateUserProfile(Long id, UpdateUserProfileRequest req) {
+        User currentUser = me();
+        guard.require(guard.has(currentUser, "user.update"));
+
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
+
+        String currentRole = currentUser.getRoles().iterator().next().getName();
+        String targetRole = target.getRoles().iterator().next().getName();
+
+        // ===== PHÂN QUYỀN =====
+        if ("ADMIN".equals(currentRole)) {
+            if ("ADMIN".equals(targetRole)) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Không thể chỉnh sửa thông tin ADMIN khác");
+            }
+        } else if ("EVM_STAFF".equals(currentRole)) {
+            if (!targetRole.equals("DEALER_MANAGER") && !targetRole.equals("DEALER_STAFF")) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ được chỉnh sửa thông tin user thuộc đại lý");
+            }
+        } else if ("DEALER_MANAGER".equals(currentRole)) {
+            if (!"DEALER_STAFF".equals(targetRole)) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ được chỉnh sửa nhân viên trong đại lý");
+            }
+            if (target.getDealer() == null ||
+                    currentUser.getDealer() == null ||
+                    !target.getDealer().getId().equals(currentUser.getDealer().getId())) {
+                throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ được chỉnh sửa nhân viên trong đại lý của bạn");
+            }
+        } else {
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Không có quyền chỉnh sửa người khác");
+        }
+
+        // 🔹 Check trùng email, phone, idNumber (trừ chính target)
+        userRepository.findByEmail(req.getEmail())
+                .filter(u -> !u.getId().equals(target.getId()))
+                .ifPresent(u -> { throw new BaseException(ErrorHandler.EMAIL_ALREADY_EXISTS); });
+
+        userRepository.findByPhoneNumber(req.getPhoneNumber())
+                .filter(u -> !u.getId().equals(target.getId()))
+                .ifPresent(u -> { throw new BaseException(ErrorHandler.PHONE_NUMBER_ALREADY_EXISTS); });
+
+        userRepository.findByIdNumber(req.getIdNumber())
+                .filter(u -> !u.getId().equals(target.getId()))
+                .ifPresent(u -> { throw new BaseException(ErrorHandler.ID_NUMBER_ALREADY_EXISTS); });
+
+        // Cập nhật thông tin
+        updateAllowedFields(target, req);
+        userRepository.save(target);
+
+        // Ép load dealer trước khi map
+        if (target.getDealer() != null) target.getDealer().getName();
+
+        return ApiResponse.ok(UserDetailResponse.fromEntity(target));
+    }
+
+
+
+    @Override
+    @Transactional
+    public ApiResponse<Void> assignUserToDealer(Long userId, Long dealerId) {
+        User currentUser = me();
+        guard.require(guard.has(currentUser, "user.assignDealer"));
+
+        if (!List.of("ADMIN", "EVM_STAFF").contains(currentUser.getRoles().iterator().next().getName())) {
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ Admin hoặc EVM Staff mới được gán đại lý cho user");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
+        Dealer dealer = dealerRepository.findById(dealerId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
+
+        user.setDealer(dealer);
+        userRepository.save(user);
+
+        return ApiResponse.okMsg("Gán user vào đại lý thành công");
+    }
+
+
     private String generateTempPassword() {
         // ví dụ: độ dài 12, gồm hoa/thường/số/ký tự đặc biệt
         final String UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -260,5 +523,26 @@ public class UserServiceImpl implements UserService {
                 .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
                 .toString();
     }
+
+    private void updateAllowedFields(User target, UpdateUserProfileRequest req) {
+        if (req.getEmail() != null) target.setEmail(req.getEmail());
+        if (req.getFullName() != null) target.setFullName(req.getFullName());
+        if (req.getPhoneNumber() != null) target.setPhoneNumber(req.getPhoneNumber());
+        if (req.getIdNumber() != null) target.setIdNumber(req.getIdNumber());
+        if (req.getAddress() != null) target.setAddress(req.getAddress());
+
+        if (req.getDateOfBirth() != null && !req.getDateOfBirth().isBlank()) {
+            target.setDateOfBirth(LocalDate.parse(req.getDateOfBirth(), DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        }
+
+        if (req.getGender() != null && !req.getGender().isBlank()) {
+            try {
+                target.setGender(User.Gender.valueOf(req.getGender().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new BaseException(ErrorHandler.INVALID_GENDER, "Giới tính không hợp lệ: " + req.getGender());
+            }
+        }
+    }
+
 
 }

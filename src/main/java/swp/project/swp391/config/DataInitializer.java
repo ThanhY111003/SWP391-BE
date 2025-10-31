@@ -75,6 +75,7 @@ public class DataInitializer implements CommandLineRunner {
                 {"user", "update", "Cập nhật người dùng", "Sửa thông tin người dùng"},
                 {"user", "inactive", "Vô hiệu hoá người dùng", "Vô hiệu hoá người dùng"},
                 {"user", "reactivate", "Kích hoạt người dùng", "Kích hoạt người dùng"},
+                {"user", "assignDealer", "Gán user vào dealer", "Gán user vào dealer"},
 
                 // Role
                 {"role", "read", "Xem role", "Xem thông tin role"},
@@ -103,6 +104,10 @@ public class DataInitializer implements CommandLineRunner {
                 {"vehicleModel", "create", "Tạo mẫu xe", "Thêm mẫu xe mới"},
                 {"vehicleModel", "read", "Xem mẫu xe", "Xem thông tin mẫu xe"},
                 {"vehicleModel", "update", "Cập nhật mẫu xe", "Sửa thông tin mẫu xe"},
+                {"vehicleModel", "viewAll", "Xem tất cả các mẫu xe", "Xem tất cả các mẫu xe"},
+                {"vehicleModel", "inactive", "Vô hiệu hoá mẫu xe", "Vô hiệu hoá mẫu xe"},
+                {"vehicleModel", "reactivate", "Kích hoạt lại mẫu xe", "Kích hoạt lại mẫu xe"},
+                {"vehicleModel", "view", "Xem mẫu xe", "Xem mẫu xe"},
 
                 // Color
                 {"color", "create", "Tạo màu xe", "Thêm màu xe mới"},

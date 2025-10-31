@@ -23,6 +23,47 @@ public class VehicleModelServiceImpl implements VehicleModelService {
     private final VehicleModelRepository modelRepo;
     private final RbacGuard guard;
 
+    @Override
+    @Transactional
+    public VehicleModelResponse inactiveModel(Long id, User currentUser) {
+        // ✅ Chỉ cho phép nếu có quyền vehicleModel.inactive
+        guard.require(guard.has(currentUser, "vehicleModel.inactive"));
+
+        VehicleModel model = modelRepo.findById(id)
+                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_NOT_FOUND));
+
+        // ❌ Không cho vô hiệu hóa nếu model đang được tham chiếu
+        boolean isInUse =
+                (model.getVehicleInstances() != null && !model.getVehicleInstances().isEmpty()) ||
+                        (model.getInventories() != null && !model.getInventories().isEmpty()) ||
+                        (model.getOrderDetails() != null && !model.getOrderDetails().isEmpty());
+
+        if (isInUse) {
+            throw new BaseException(ErrorHandler.VEHICLE_MODEL_IN_USE);
+        }
+
+        // ✅ Đánh dấu là inactive
+        model.setIsActive(false);
+        modelRepo.save(model);
+        return mapToResponse(model);
+    }
+
+    @Override
+    @Transactional
+    public VehicleModelResponse reactiveModel(Long id, User currentUser) {
+        // ✅ Chỉ cho phép nếu có quyền vehicleModel.reactivate
+        guard.require(guard.has(currentUser, "vehicleModel.reactivate"));
+
+        VehicleModel model = modelRepo.findById(id)
+                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_NOT_FOUND));
+
+        // ✅ Kích hoạt lại model
+        model.setIsActive(true);
+        modelRepo.save(model);
+        return mapToResponse(model);
+    }
+
+
     // ----------------------------
     // CREATE
     // ----------------------------
@@ -63,19 +104,40 @@ public class VehicleModelServiceImpl implements VehicleModelService {
     // ----------------------------
     @Override
     public List<VehicleModelResponse> getAllVehicleModels() {
-        List<VehicleModel> list = modelRepo.findAll(); // lấy toàn bộ, không lọc
-        return list.stream().map(this::mapToResponse).collect(Collectors.toList());
+        User currentUser = guard.me();
+
+        List<VehicleModel> models;
+        if (guard.has(currentUser, "vehicleModel.viewAll")) {
+            // ADMIN, EVM_STAFF — xem tất cả
+            models = modelRepo.findAll();
+        } else {
+            // DEALER — chỉ xem model đang active
+            models = modelRepo.findByIsActiveTrue();
+        }
+
+        return models.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
+
 
     // ----------------------------
     // GET BY ID
     // ----------------------------
     @Override
     public VehicleModelResponse getVehicleModelById(Long id) {
+        User currentUser = guard.me(); // Lấy user hiện tại
+
         VehicleModel model = modelRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_NOT_FOUND));
+
+        // 🔒 Nếu model đã inactive và user KHÔNG có quyền viewAll => chặn truy cập
+        if (!Boolean.TRUE.equals(model.getIsActive())
+                && !guard.has(currentUser, "vehicleModel.view")) {
+            throw new BaseException(ErrorHandler.FORBIDDEN);
+        }
+
         return mapToResponse(model);
     }
+
 
     // ----------------------------
     // UPDATE
@@ -114,6 +176,8 @@ public class VehicleModelServiceImpl implements VehicleModelService {
         modelRepo.save(model);
         return mapToResponse(model);
     }
+
+
 
     // ----------------------------
     // Helper

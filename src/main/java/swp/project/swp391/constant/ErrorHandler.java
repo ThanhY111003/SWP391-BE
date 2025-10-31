@@ -51,6 +51,7 @@ public enum ErrorHandler {
     VIN_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "VIN đã tồn tại"),
     VEHICLE_MODEL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mẫu xe"),
     VEHICLE_COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu xe"),
+    VEHICLE_MODEL_IN_USE(HttpStatus.CONFLICT,400,"Model xe này đang được sử dụng"),
     COLOR_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy màu"),
     COLOR_ASSIGNED_TO_MODEL(HttpStatus.BAD_REQUEST, 400, "Màu đang được gán vào mẫu xe,vui lòng gỡ bỏ màu khỏi các mẫu xe trước khi vô hiệu hóa"),
     COLOR_ISACTIVE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Màu này đã bị vô hiệu hoá"),

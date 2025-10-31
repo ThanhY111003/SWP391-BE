@@ -87,4 +87,22 @@
             VehicleModelResponse response = service.updateVehicleModel(id, request, currentUser);
             return ResponseEntity.ok(ApiResponse.ok(response, "Cập nhật model thành công."));
         }
+
+        // --- Inactivate Model ---
+        @Operation(summary = "Vô hiệu hóa model xe", description = "Chỉ ADMIN hoặc EVM_STAFF được phép, nếu model chưa được sử dụng")
+        @PatchMapping("/{id}/inactive")
+        public ResponseEntity<ApiResponse<VehicleModelResponse>> inactiveModel(@PathVariable Long id) {
+            User currentUser = guard.me();
+            VehicleModelResponse response = service.inactiveModel(id, currentUser);
+            return ResponseEntity.ok(ApiResponse.ok(response, "Đã vô hiệu hóa model xe"));
+        }
+
+        // --- Reactive Model ---
+        @Operation(summary = "Kích hoạt lại model xe", description = "Chỉ ADMIN hoặc EVM_STAFF được phép bật lại model đã inactive")
+        @PatchMapping("/{id}/reactive")
+        public ResponseEntity<ApiResponse<VehicleModelResponse>> reactiveModel(@PathVariable Long id) {
+            User currentUser = guard.me();
+            VehicleModelResponse response = service.reactiveModel(id, currentUser);
+            return ResponseEntity.ok(ApiResponse.ok(response, "Đã kích hoạt lại model xe"));
+        }
     }
