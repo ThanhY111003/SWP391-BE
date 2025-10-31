@@ -544,8 +544,5 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-<<<<<<< HEAD
 
-=======
->>>>>>> b024b92390d85200e73af5fc6637b214a44969ea
 }
