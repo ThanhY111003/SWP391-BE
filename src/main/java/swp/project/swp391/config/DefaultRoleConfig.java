@@ -31,14 +31,17 @@ public class DefaultRoleConfig {
                     "order.create","order.read","order.read_all",
                     "inventory.read",
                     "customer.create","customer.read","customer.update",
-                    "vehicle.read","vehicleModel.read",
+                    "vehicle.read","vehicle.assign_customer",
+                    "vehicleModel.read","vehicleModel.viewAll",
                     "report.read"
             ),
             "DEALER_STAFF", List.of(
-                    "order.create","order.read",
+                    "user.read","user.update",
+                    "order.create","order.read","order.read_all",
                     "inventory.read",
-                    "customer.create","customer.read",
-                    "vehicle.read","vehicleModel.read"
+                    "customer.create","customer.read","customer.update",
+                    "vehicle.read","vehicle.assign_customer",
+                    "vehicleModel.read","vehicleModel.viewAll"
             )
     );
 

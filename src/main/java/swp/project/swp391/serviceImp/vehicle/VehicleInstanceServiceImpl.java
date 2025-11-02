@@ -61,7 +61,6 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
     }
 
 
-
     // --------------------------------------------------------
     // GET BY ID
     // --------------------------------------------------------
