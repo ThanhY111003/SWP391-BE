@@ -66,14 +66,14 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<UserDetailResponse>> getMyProfile() {
         return ResponseEntity.ok(userService.getMyProfile());
     }
-    @PatchMapping("/me")
+    @PutMapping("/me")
     @Operation(summary = "Cập nhật thông tin cá nhân (profile của chính mình)")
     public ResponseEntity<ApiResponse<UserDetailResponse>> updateMyProfile(
             @Valid @RequestBody UpdateUserProfileRequest request) {
         return ResponseEntity.ok(userService.updateMyProfile(request));
     }
 
-    @PatchMapping("/{id}")
+    @PutMapping("/{id}")
     @Operation(summary = "Admin / EVM Staff / Dealer Manager cập nhật thông tin người khác")
     public ResponseEntity<ApiResponse<UserDetailResponse>> updateUserProfile(
             @PathVariable Long id,
