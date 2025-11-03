@@ -62,16 +62,16 @@ public class OrderApprovalServiceImpl implements OrderApprovalService {
 
             Inventory inv = inventoryRepo.lockByDealerIdAndVehicleModelColorId(dealer.getId(), d.getVehicleModelColor().getId())
                     .orElseGet(() -> {
-                Inventory i = Inventory.builder()
-                        .dealer(dealer)
-                        .vehicleModelColor(d.getVehicleModelColor())
-                        .totalQuantity(0)
-                        .reservedQuantity(0)
-                        .availableQuantity(0)
-                        .isActive(true)
-                        .build();
-                return inventoryRepo.save(i);
-            });
+                        Inventory i = Inventory.builder()
+                                .dealer(dealer)
+                                .vehicleModelColor(d.getVehicleModelColor())
+                                .totalQuantity(0)
+                                .reservedQuantity(0)
+                                .availableQuantity(0)
+                                .isActive(true)
+                                .build();
+                        return inventoryRepo.save(i);
+                    });
 
             for (int i = 0; i < qty; i++) {
                 String vin = generateVinUnique(existingVins, d.getVehicleModel());
@@ -129,20 +129,20 @@ public class OrderApprovalServiceImpl implements OrderApprovalService {
             dealerRepo.save(dealer);
 
         } else {
-        // TRẢ GÓP: giữ CONFIRMED, tăng nợ = remaining
-        log.info("Order {} is INSTALLMENT - keeping CONFIRMED status", order.getOrderCode());
+            // TRẢ GÓP: giữ CONFIRMED, tăng nợ = remaining
+            log.info("Order {} is INSTALLMENT - keeping CONFIRMED status", order.getOrderCode());
 
-        BigDecimal total = order.getTotalAmount();
-        BigDecimal deposit = order.getDepositAmount() == null ? BigDecimal.ZERO : order.getDepositAmount();
-        BigDecimal paid = order.getPaidAmount() == null ? BigDecimal.ZERO : order.getPaidAmount();
+            BigDecimal total = order.getTotalAmount();
+            BigDecimal deposit = order.getDepositAmount() == null ? BigDecimal.ZERO : order.getDepositAmount();
+            BigDecimal paid = order.getPaidAmount() == null ? BigDecimal.ZERO : order.getPaidAmount();
 
-        BigDecimal incDebt = total.subtract(deposit.add(paid));
-        if (incDebt.compareTo(BigDecimal.ZERO) < 0) incDebt = BigDecimal.ZERO;
+            BigDecimal incDebt = total.subtract(deposit.add(paid));
+            if (incDebt.compareTo(BigDecimal.ZERO) < 0) incDebt = BigDecimal.ZERO;
 
-        BigDecimal currentDebt = dealer.getCurrentDebt();
-        dealer.setCurrentDebt(currentDebt.add(incDebt));
-        dealerRepo.save(dealer);
-    }
+            BigDecimal currentDebt = dealer.getCurrentDebt();
+            dealer.setCurrentDebt(currentDebt.add(incDebt));
+            dealerRepo.save(dealer);
+        }
 
         orderRepo.save(order);
 
