@@ -155,10 +155,16 @@ public class CartServiceImpl implements CartService {
         List<CartResponse.Item> items = cart.getItems().stream().map(i -> {
             VehicleModelColor color = i.getVehicleModelColor();
 
+            // ✅ Ưu tiên lấy giá từ bảng VehiclePrice
             BigDecimal unitPrice = priceRepo.findActiveByVehicleModelColorAndDealerLevel(
                             color, dealerLevel, today
                     ).map(VehiclePrice::getWholesalePrice)
-                    .orElse(color.getVehicleModel().getManufacturerPrice()); // fallback
+                    // ✅ Nếu không có bảng giá, fallback = manufacturerPrice + priceAdjustment
+                    .orElseGet(() -> {
+                        BigDecimal base = color.getVehicleModel().getManufacturerPrice();
+                        BigDecimal adj = color.getPriceAdjustment() != null ? color.getPriceAdjustment() : BigDecimal.ZERO;
+                        return base.add(adj);
+                    });
 
             BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(i.getQuantity()));
 
@@ -178,4 +184,5 @@ public class CartServiceImpl implements CartService {
 
         return CartResponse.fromEntity(cart, cartTotal, items);
     }
+
 }
