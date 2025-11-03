@@ -170,6 +170,7 @@ public class CartServiceImpl implements CartService {
 
             return CartResponse.Item.builder()
                     .id(i.getId())
+                    .vehicleModelColorId(color.getId())
                     .modelName(color.getVehicleModel().getName())
                     .colorName(color.getColor().getColorName())
                     .quantity(i.getQuantity())

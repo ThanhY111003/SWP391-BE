@@ -25,7 +25,8 @@ public class CartResponse {
     @AllArgsConstructor
     @Builder
     public static class Item {
-        private Long id;
+        private Long id;        
+        private Long vehicleModelColorId;
         private String modelName;
         private String colorName;
         private Integer quantity;
