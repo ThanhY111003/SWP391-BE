@@ -32,21 +32,13 @@ public class VehicleModelServiceImpl implements VehicleModelService {
         VehicleModel model = modelRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_NOT_FOUND));
 
-        // ❌ Không cho vô hiệu hóa nếu model đang được tham chiếu
-        boolean isInUse =
-                (model.getVehicleInstances() != null && !model.getVehicleInstances().isEmpty()) ||
-                        (model.getInventories() != null && !model.getInventories().isEmpty()) ||
-                        (model.getOrderDetails() != null && !model.getOrderDetails().isEmpty());
-
-        if (isInUse) {
-            throw new BaseException(ErrorHandler.VEHICLE_MODEL_IN_USE);
-        }
-
-        // ✅ Đánh dấu là inactive
+        // ✅ Đánh dấu là inactive (không xóa, không cần kiểm tra liên kết)
         model.setIsActive(false);
         modelRepo.save(model);
+
         return mapToResponse(model);
     }
+
 
     @Override
     @Transactional

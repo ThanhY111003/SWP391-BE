@@ -33,7 +33,7 @@ public class VehicleInstanceResponse {
                 .engineNumber(entity.getEngineNumber())
                 .status(entity.getStatus().name())
                 .modelName(entity.getVehicleModel().getName())
-                .colorName(entity.getVehicleColor().getColor().getColorName())
+                .colorName(entity.getVehicleModelColor().getColor().getColorName())
                 .dealerName(entity.getCurrentDealer() != null ? entity.getCurrentDealer().getName() : null)
                 .isActive(entity.getIsActive())
                 .manufacturingDate(entity.getManufacturingDate())

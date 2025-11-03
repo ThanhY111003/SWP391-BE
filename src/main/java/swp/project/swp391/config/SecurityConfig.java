@@ -55,6 +55,11 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new CustomAuthEntryPoint())
+                        .accessDeniedHandler(new CustomAccessDeniedHandler())
+                )
+
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 // ✅ Bỏ .defaultsDisabled() vì Spring Security 6 không chấp nhận headers trống
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()));

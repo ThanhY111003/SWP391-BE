@@ -37,8 +37,8 @@ public class Inventory {
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vehicle_model_id", nullable = false)
-    private VehicleModel vehicleModel;
+    @JoinColumn(name = "vehicle_model_color_id", nullable = false)
+    private VehicleModelColor vehicleModelColor;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dealer_id", nullable = false)

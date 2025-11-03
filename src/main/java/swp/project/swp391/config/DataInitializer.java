@@ -94,6 +94,7 @@ public class DataInitializer implements CommandLineRunner {
                 {"vehicle", "deactive", "Vô hiệu hoá xe", "Vô hiệu hoá xe"},
                 {"vehicle", "active", "Kích hoạt xe", "Kích hoạt lại xe"},
                 {"vehicle", "assign_customer", "Gán xe cho khách hàng", "Gán xe cho khách hàng"},
+                {"vehicle", "transfer", "Chuyển xe giữa các đại lý", "Chuyển xe giữa các đại lý"},
 
                 // Vehicle Model Color
                 {"vehicleModelColor", "create", "Gán màu xe", "Gán màu cho mẫu xe"},
@@ -148,6 +149,14 @@ public class DataInitializer implements CommandLineRunner {
                 {"customer", "update", "Cập nhật khách hàng", "Sửa thông tin khách hàng"},
                 {"customer", "activate", "activate khách hàng ", "activate khách hàng"},
                 {"customer", "deactivate", "deactivate khách hàng", "deactivate khách hàng"},
+
+                // Vehicle Price
+                {"vehicle_price", "create", "Tạo bảng giá xe", "Thêm mới bảng giá xe"},
+                {"vehicle_price", "read", "Xem bảng giá xe cho hãng", "Xem thông tin bảng giá xe cho hãng"},
+                {"vehicle_price", "manage_all", "Quản lý tất cả bảng giá xe cho hãng", "Xem và quản lý tất cả bảng giá xe cho hãng"},
+                {"vehicle_price", "update", "Sửa bảng giá xe", "Sửa bảng giá xe"},
+                {"vehicle_price", "deactivate", "Vô hiệu hoá bảng giá xe", "Vô hiệu hoá bảng giá xe"},
+                {"vehicle_price", "activate", "Kích hoạt bảng giá xe", "Kích hoạt bảng giá xe"},
 
                 // Report
                 {"report", "read", "Xem báo cáo", "Xem các báo cáo"},

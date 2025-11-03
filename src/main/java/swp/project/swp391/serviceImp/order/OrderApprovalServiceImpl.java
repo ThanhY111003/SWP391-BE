@@ -60,12 +60,11 @@ public class OrderApprovalServiceImpl implements OrderApprovalService {
         for (OrderDetail d : details) {
             int qty = d.getQuantity();
 
-            Inventory inv = inventoryRepo.lockByDealerIdAndVehicleModelId(
-                    dealer.getId(), d.getVehicleModel().getId()
-            ).orElseGet(() -> {
+            Inventory inv = inventoryRepo.lockByDealerIdAndVehicleModelColorId(dealer.getId(), d.getVehicleModelColor().getId())
+                    .orElseGet(() -> {
                 Inventory i = Inventory.builder()
                         .dealer(dealer)
-                        .vehicleModel(d.getVehicleModel())
+                        .vehicleModelColor(d.getVehicleModelColor())
                         .totalQuantity(0)
                         .reservedQuantity(0)
                         .availableQuantity(0)
@@ -95,11 +94,12 @@ public class OrderApprovalServiceImpl implements OrderApprovalService {
                         .vin(vin)
                         .engineNumber(engine)
                         .vehicleModel(d.getVehicleModel())
-                        .vehicleColor(d.getVehicleColor())
+                        .vehicleModelColor(d.getVehicleModelColor())
                         .manufacturingDate(LocalDate.now())
                         .status(VehicleInstance.VehicleStatus.IN_STOCK)
                         .isActive(true)
                         .currentDealer(dealer)
+                        .currentValue(d.getUnitPrice())
                         .build();
 
                 vehicleRepo.save(v);

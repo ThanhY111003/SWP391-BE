@@ -1,13 +1,19 @@
 package swp.project.swp391.controller.vehicle;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.entity.VehicleInstance;
+import swp.project.swp391.request.vehicle.AssignVehicleRequest;
+import swp.project.swp391.request.vehicle.TransferVehicleRequest;
+import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.vehicle.VehicleInstanceService;
@@ -41,14 +47,16 @@ public class VehicleInstanceController {
 
 
     @Operation(summary = "Gán xe cho khách hàng")
-    @PostMapping("/{id}/assign-customer")
-    public ResponseEntity<ApiResponse<Void>> assignToCustomer(
-            @PathVariable Long id,
-            @RequestParam @NotNull Long customerId) {
-        var user = guard.me();
-        service.assignToCustomer(id, customerId, user.getId());
-        return ResponseEntity.ok(ApiResponse.okMsg("Gán xe cho khách hàng thành công"));
+    @PostMapping("/assign-customer")
+    public ResponseEntity<ApiResponse<CustomerVehicleResponse>> assignToCustomer(
+            @RequestBody @Valid AssignVehicleRequest request) {
+
+        // 🧩 Dùng service mới
+        CustomerVehicleResponse response = service.assignToCustomer(request);
+
+        return ResponseEntity.ok(ApiResponse.ok(response, "Gán xe cho khách hàng thành công"));
     }
+
 
     @Operation(summary = "Vô hiệu hóa xe")
     @PatchMapping("/{id}/deactivate")
@@ -68,10 +76,23 @@ public class VehicleInstanceController {
     @PutMapping("/{id}/status")
     public ResponseEntity<ApiResponse<VehicleInstanceResponse>> updateStatus(
             @PathVariable Long id,
+            @Parameter(
+                    description = "Chỉ chấp nhận IN_STOCK hoặc RESERVED",
+                    schema = @Schema(allowableValues = {"IN_STOCK", "RESERVED"})
+            )
             @RequestParam VehicleInstance.VehicleStatus status) {
 
         VehicleInstanceResponse response = service.updateStatus(id, status);
         return ResponseEntity.ok(ApiResponse.ok(response, "Cập nhật trạng thái xe thành công"));
     }
+
+    @Operation(summary = "Chuyển xe giữa các đại lý (chỉ dành cho ADMIN hoặc EVM_STAFF)")
+    @PutMapping("/transfer")
+    public ResponseEntity<ApiResponse<VehicleInstanceResponse>> transferVehicle(
+            @RequestBody TransferVehicleRequest req) {
+        VehicleInstanceResponse response = service.transferVehicle(req);
+        return ResponseEntity.ok(ApiResponse.ok(response, "Chuyển xe giữa đại lý thành công"));
+    }
+
 
 }

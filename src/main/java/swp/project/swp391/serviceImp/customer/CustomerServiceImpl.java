@@ -71,6 +71,10 @@ public class CustomerServiceImpl implements CustomerService {
         if (customerRepo.existsByIdNumber(req.getIdNumber())) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST, "Số CMND/CCCD đã tồn tại.");
         }
+        if (customerRepo.existsByEmail(req.getEmail())) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Email đã tồn tại.");
+        }
+
 
         Customer c = Customer.builder()
                 .fullName(req.getFullName())
@@ -97,19 +101,54 @@ public class CustomerServiceImpl implements CustomerService {
         Customer c = customerRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.CUSTOMER_NOT_FOUND));
 
+        // --- Kiểm tra trùng thông tin duy nhất ---
+        if (req.getPhoneNumber() != null
+                && !req.getPhoneNumber().equals(c.getPhoneNumber())
+                && customerRepo.existsByPhoneNumber(req.getPhoneNumber())) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Số điện thoại đã tồn tại.");
+        }
+
+        if (req.getEmail() != null
+                && !req.getEmail().equalsIgnoreCase(c.getEmail())
+                && customerRepo.existsByEmail(req.getEmail())) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Email đã tồn tại.");
+        }
+
+        if (req.getIdNumber() != null
+                && !req.getIdNumber().equals(c.getIdNumber())
+                && customerRepo.existsByIdNumber(req.getIdNumber())) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Số CMND/CCCD đã tồn tại.");
+        }
+
+        // --- Cập nhật thông tin cơ bản ---
         if (req.getFullName() != null) c.setFullName(req.getFullName());
         if (req.getPhoneNumber() != null) c.setPhoneNumber(req.getPhoneNumber());
         if (req.getEmail() != null) c.setEmail(req.getEmail());
         if (req.getIdNumber() != null) c.setIdNumber(req.getIdNumber());
-        if (req.getDateOfBirth() != null && !req.getDateOfBirth().isBlank())
-            c.setDateOfBirth(LocalDate.parse(req.getDateOfBirth()));
-        if (req.getGender() != null)
-            c.setGender(Customer.Gender.valueOf(req.getGender().toUpperCase()));
+
+        if (req.getDateOfBirth() != null && !req.getDateOfBirth().isBlank()) {
+            try {
+                c.setDateOfBirth(LocalDate.parse(req.getDateOfBirth()));
+            } catch (Exception e) {
+                throw new BaseException(ErrorHandler.INVALID_REQUEST, "Ngày sinh không hợp lệ, định dạng yyyy-MM-dd.");
+            }
+        }
+
+        if (req.getGender() != null) {
+            try {
+                c.setGender(Customer.Gender.valueOf(req.getGender().toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                throw new BaseException(ErrorHandler.INVALID_REQUEST, "Giới tính phải là MALE, FEMALE hoặc OTHER.");
+            }
+        }
+
         if (req.getAddress() != null) c.setAddress(req.getAddress());
         if (req.getNotes() != null) c.setNotes(req.getNotes());
 
-        return CustomerResponse.fromEntity(customerRepo.save(c));
+        customerRepo.save(c);
+        return CustomerResponse.fromEntity(c);
     }
+
 
     // --------------------------------------------------------
     // DEACTIVATE

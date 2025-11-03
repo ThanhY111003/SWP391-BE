@@ -480,7 +480,7 @@ public class UserServiceImpl implements UserService {
         guard.require(guard.has(currentUser, "user.assignDealer"));
 
         if (!List.of("ADMIN", "EVM_STAFF").contains(currentUser.getRoles().iterator().next().getName())) {
-            throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ Admin hoặc EVM Staff mới được gán đại lý cho user");
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Chỉ Admin hoặc EVM Staff mới được gán user cho đại lý");
         }
 
         User user = userRepository.findById(userId)
