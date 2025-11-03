@@ -1,6 +1,9 @@
 package swp.project.swp391.service.vehicle;
 
 import swp.project.swp391.entity.VehicleInstance;
+import swp.project.swp391.request.vehicle.AssignVehicleRequest;
+import swp.project.swp391.request.vehicle.TransferVehicleRequest;
+import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 
 import java.util.List;
@@ -20,7 +23,7 @@ public interface VehicleInstanceService {
     /**
      * Gán xe cho khách hàng (bán xe)
      */
-    void assignToCustomer(Long vehicleId, Long customerId, Long soldByUserId);
+    CustomerVehicleResponse  assignToCustomer(AssignVehicleRequest request);
 
     /**
      * Vô hiệu hóa xe (chỉ khi xe đang trong kho)
@@ -36,5 +39,7 @@ public interface VehicleInstanceService {
      * Cập nhật trạng thái xe
      */
     VehicleInstanceResponse updateStatus(Long id, VehicleInstance.VehicleStatus status);
+
+    VehicleInstanceResponse transferVehicle(TransferVehicleRequest req);
 
 }

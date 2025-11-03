@@ -28,4 +28,8 @@
          */
         VehicleModelResponse updateVehicleModel(Long id, VehicleModelRequest request, User currentUser);
 
+        VehicleModelResponse inactiveModel(Long id, User currentUser);
+
+        VehicleModelResponse reactiveModel(Long id, User currentUser);
+
     }

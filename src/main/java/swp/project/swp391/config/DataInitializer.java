@@ -75,6 +75,7 @@ public class DataInitializer implements CommandLineRunner {
                 {"user", "update", "Cập nhật người dùng", "Sửa thông tin người dùng"},
                 {"user", "inactive", "Vô hiệu hoá người dùng", "Vô hiệu hoá người dùng"},
                 {"user", "reactivate", "Kích hoạt người dùng", "Kích hoạt người dùng"},
+                {"user", "assignDealer", "Gán user vào dealer", "Gán user vào dealer"},
 
                 // Role
                 {"role", "read", "Xem role", "Xem thông tin role"},
@@ -93,6 +94,7 @@ public class DataInitializer implements CommandLineRunner {
                 {"vehicle", "deactive", "Vô hiệu hoá xe", "Vô hiệu hoá xe"},
                 {"vehicle", "active", "Kích hoạt xe", "Kích hoạt lại xe"},
                 {"vehicle", "assign_customer", "Gán xe cho khách hàng", "Gán xe cho khách hàng"},
+                {"vehicle", "transfer", "Chuyển xe giữa các đại lý", "Chuyển xe giữa các đại lý"},
 
                 // Vehicle Model Color
                 {"vehicleModelColor", "create", "Gán màu xe", "Gán màu cho mẫu xe"},
@@ -103,6 +105,10 @@ public class DataInitializer implements CommandLineRunner {
                 {"vehicleModel", "create", "Tạo mẫu xe", "Thêm mẫu xe mới"},
                 {"vehicleModel", "read", "Xem mẫu xe", "Xem thông tin mẫu xe"},
                 {"vehicleModel", "update", "Cập nhật mẫu xe", "Sửa thông tin mẫu xe"},
+                {"vehicleModel", "viewAll", "Xem tất cả các mẫu xe", "Xem tất cả các mẫu xe"},
+                {"vehicleModel", "inactive", "Vô hiệu hoá mẫu xe", "Vô hiệu hoá mẫu xe"},
+                {"vehicleModel", "reactivate", "Kích hoạt lại mẫu xe", "Kích hoạt lại mẫu xe"},
+                {"vehicleModel", "view", "Xem mẫu xe", "Xem mẫu xe"},
 
                 // Color
                 {"color", "create", "Tạo màu xe", "Thêm màu xe mới"},
@@ -127,6 +133,7 @@ public class DataInitializer implements CommandLineRunner {
                 {"dealer", "update", "Cập nhật đại lý", "Sửa thông tin đại lý"},
                 {"dealer", "inactive", "Vô hiệu hoá đại lý", "Vô hiệu hoá đại lý"},
                 {"dealer", "reactivate", "Kích hoạt đại lý", "Kích hoạt lại đại lý"},
+                {"dealer", "read.all", "Xem đại lý", "Xem thông tin đại lý"},
 
                 {"dealerLevel", "create", "Tạo cấp độ đại lý", "Thêm cấp độ đại lý mới"},
                 {"dealerLevel", "update", "Cập nhật cấp độ đại lý", "Sửa thông tin cấp độ đại lý"},
@@ -142,6 +149,14 @@ public class DataInitializer implements CommandLineRunner {
                 {"customer", "update", "Cập nhật khách hàng", "Sửa thông tin khách hàng"},
                 {"customer", "activate", "activate khách hàng ", "activate khách hàng"},
                 {"customer", "deactivate", "deactivate khách hàng", "deactivate khách hàng"},
+
+                // Vehicle Price
+                {"vehicle_price", "create", "Tạo bảng giá xe", "Thêm mới bảng giá xe"},
+                {"vehicle_price", "read", "Xem bảng giá xe cho hãng", "Xem thông tin bảng giá xe cho hãng"},
+                {"vehicle_price", "manage_all", "Quản lý tất cả bảng giá xe cho hãng", "Xem và quản lý tất cả bảng giá xe cho hãng"},
+                {"vehicle_price", "update", "Sửa bảng giá xe", "Sửa bảng giá xe"},
+                {"vehicle_price", "deactivate", "Vô hiệu hoá bảng giá xe", "Vô hiệu hoá bảng giá xe"},
+                {"vehicle_price", "activate", "Kích hoạt bảng giá xe", "Kích hoạt bảng giá xe"},
 
                 // Report
                 {"report", "read", "Xem báo cáo", "Xem các báo cáo"},

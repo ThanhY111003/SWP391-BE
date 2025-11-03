@@ -50,7 +50,7 @@ public class DealerLevelController {
     @Operation(summary = "Lấy danh sách cấp độ đại lý", description = "Trả về danh sách tất cả cấp độ đại lý hiện có")
     @GetMapping
     public ResponseEntity<ApiResponse<List<DealerLevelResponse>>> getAllDealerLevels() {
-        guard.require(guard.has(guard.me(), "dealerLevel.read.all"));
+        guard.require(guard.has(guard.me(), "dealerLevel.read"));
 
         List<DealerLevelResponse> dealerLevelResponses = dealerLevelService.getAllDealerLevels();
         return ResponseEntity.ok(ApiResponse.ok(dealerLevelResponses, "Lấy danh sách cấp độ đại lý thành công"));

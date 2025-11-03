@@ -48,4 +48,7 @@ public class VehicleModelColor {
     @Builder.Default
     private Boolean isActive = true;
 
+    @OneToMany(mappedBy = "vehicleModelColor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Inventory> inventories;
+
 }

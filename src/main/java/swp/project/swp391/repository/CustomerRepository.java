@@ -28,4 +28,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     /** Tìm tất cả khách hàng có số điện thoại chứa chuỗi */
     List<Customer> findByPhoneNumberContaining(String phone);
 
+    boolean existsByEmail(String email);
+
 }

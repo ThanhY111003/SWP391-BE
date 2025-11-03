@@ -111,32 +111,31 @@ public class DealerServiceImpl implements DealerService {
     @Transactional(readOnly = true)
     public List<DealerResponse> getAllDealers(User currentUser) {
         List<Dealer> dealers;
-        if (currentUser == null) {
-            dealers = dealerRepository.findByIsActive(true);
-        } else if (guard.has(currentUser, "dealer.read.all")) {
+
+        if (guard.has(currentUser, "dealer.read.all")) {
             dealers = dealerRepository.findAll();
         } else {
-            dealers = dealerRepository.findByIsActive(true);
+            // ❌ Không có quyền => chặn luôn (tránh dealers bị null)
+            throw new BaseException(ErrorHandler.FORBIDDEN);
         }
-        return dealers.stream().map(this::toResponse).collect(Collectors.toList());
+        return dealers.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
+
 
     @Override
     @Transactional(readOnly = true)
     public DealerResponse getDealer(Long dealerId, User currentUser) {
-        Dealer dealer;
-        if (currentUser == null) {
-            dealer = dealerRepository.findByIdAndIsActive(dealerId, true)
-                    .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
-        } else if (guard.has(currentUser, "dealer.read.all")) {
-            dealer = dealerRepository.findById(dealerId)
-                    .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
-        } else {
-            dealer = dealerRepository.findByIdAndIsActive(dealerId, true)
-                    .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
-        }
+        // ✅ Chỉ hãng (ADMIN / EVM_STAFF) có quyền xem chi tiết dealer
+        guard.require(guard.has(currentUser, "dealer.read"));
+
+        Dealer dealer = dealerRepository.findById(dealerId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
+
         return toResponse(dealer);
     }
+
 
     @Override
     @Transactional
@@ -186,7 +185,8 @@ public class DealerServiceImpl implements DealerService {
                 d.getPhoneNumber(),
                 d.getEmail(),
                 d.getIsActive(),
-                d.getRegion().name()
+                d.getRegion().name(),
+                d.getLevel() != null ? d.getLevel().getId() : null
         );
     }
 

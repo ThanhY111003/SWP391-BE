@@ -63,7 +63,7 @@ public class OrderServiceImpl implements OrderService {
 
             OrderDetail detail = OrderDetail.builder()
                     .vehicleModel(vehicleModel)
-                    .vehicleColor(vehicleModelColor)
+                    .vehicleModelColor(vehicleModelColor)
                     .quantity(detailReq.getQuantity())
                     .unitPrice(unitPrice)
                     .totalPrice(detailTotal)
@@ -232,69 +232,64 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // ===== CALCULATION METHODS =====
+    private BigDecimal getVehiclePriceForDealer(
+            VehicleModel vehicleModel,
+            VehicleModelColor vehicleColor,
+            DealerLevel dealerLevel) {
 
-    private BigDecimal getVehiclePriceForDealer(VehicleModel vehicleModel,
-                                                VehicleModelColor vehicleColor,
-                                                DealerLevel dealerLevel) {
+        BigDecimal finalPrice;
 
-        BigDecimal basePrice;
-
-        // 1. Tìm giá trong VehiclePrice cho VehicleModelColor cụ thể
-        Optional<VehiclePrice> vehiclePrice = vehiclePriceRepository
+        // 1️⃣ Tìm giá theo VehicleModelColor + DealerLevel (bảng giá)
+        Optional<VehiclePrice> vehiclePriceOpt = vehiclePriceRepository
                 .findActiveByVehicleModelColorAndDealerLevel(vehicleColor, dealerLevel, LocalDate.now());
 
-        if (vehiclePrice.isPresent()) {
-            // Nếu có giá cho color cụ thể, dùng giá này
-            basePrice = vehiclePrice.get().getWholesalePrice();
-            log.debug("Using VehiclePrice for color {}: {}",
-                    vehicleColor.getColor().getColorName(), basePrice);
+        if (vehiclePriceOpt.isPresent()) {
+            // ✅ Có bảng giá: dùng giá wholesalePrice, KHÔNG áp discount
+            VehiclePrice vp = vehiclePriceOpt.get();
+            finalPrice = vp.getWholesalePrice();
+
+            log.info("[PRICE] Using VehiclePrice for {} - {} (dealer level {}): {}",
+                    vehicleModel.getName(),
+                    vehicleColor.getColor().getColorName(),
+                    dealerLevel.getLevelName(),
+                    finalPrice);
+
         } else {
-            // 2. Fallback: Lấy giá từ VehicleModel + priceAdjustment của color
+            // ❌ Không có bảng giá: fallback sang giá hãng + điều chỉnh màu + discountRate
             BigDecimal modelPrice = vehicleModel.getManufacturerPrice();
             if (modelPrice == null) {
-                throw new IllegalStateException(
-                        "Không tìm thấy giá cho model: " + vehicleModel.getName()
-                );
+                throw new IllegalStateException("Không tìm thấy giá gốc cho model: " + vehicleModel.getName());
             }
 
-            // Cộng thêm priceAdjustment nếu có
-            BigDecimal priceAdjustment = vehicleColor.getPriceAdjustment();
-            if (priceAdjustment != null) {
-                basePrice = modelPrice.add(priceAdjustment);
-                log.debug("Using model price {} + adjustment {}: {}",
-                        modelPrice, priceAdjustment, basePrice);
-            } else {
-                basePrice = modelPrice;
-                log.debug("Using model price without adjustment: {}", basePrice);
+            BigDecimal priceAdjustment = vehicleColor.getPriceAdjustment() != null
+                    ? vehicleColor.getPriceAdjustment()
+                    : BigDecimal.ZERO;
+
+            BigDecimal basePrice = modelPrice.add(priceAdjustment);
+            BigDecimal discount = dealerLevel.getDiscountRate() != null
+                    ? dealerLevel.getDiscountRate()
+                    : BigDecimal.ZERO;
+
+            // Chuyển discount về dạng tỷ lệ (nếu > 1)
+            if (discount.compareTo(BigDecimal.ONE) > 0) {
+                discount = discount.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                log.warn("[PRICE] Auto-converted discountRate > 1 to {} for level {}", discount, dealerLevel.getLevelName());
             }
+
+            // Kiểm tra hợp lệ
+            if (discount.compareTo(BigDecimal.ZERO) < 0 || discount.compareTo(BigDecimal.ONE) > 0) {
+                throw new IllegalStateException("Discount rate không hợp lệ: " + discount);
+            }
+
+            finalPrice = basePrice.subtract(basePrice.multiply(discount)).setScale(2, RoundingMode.HALF_UP);
+
+            log.info("[PRICE] Fallback pricing → model={}, adj={}, discount={}%, final={}",
+                    modelPrice, priceAdjustment, discount.multiply(BigDecimal.valueOf(100)), finalPrice);
         }
 
-        // 3. Áp dụng discount của dealer level
-        BigDecimal discount = dealerLevel.getDiscountRate();
-        if (discount == null) {
-            discount = BigDecimal.ZERO;
-        }
-
-        // Auto-convert discount nếu > 1
-        if (discount.compareTo(BigDecimal.ONE) > 0) {
-            discount = discount.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
-            log.warn("Auto-converted discount rate from {} to {}",
-                    dealerLevel.getDiscountRate(), discount);
-        }
-
-        // Validate discount
-        if (discount.compareTo(BigDecimal.ZERO) < 0 || discount.compareTo(BigDecimal.ONE) > 0) {
-            throw new IllegalStateException("Discount rate không hợp lệ: " + discount);
-        }
-
-        BigDecimal finalPrice = basePrice.subtract(basePrice.multiply(discount))
-                .setScale(2, RoundingMode.HALF_UP);
-
-        log.info("Final price calculation: base={}, discount={}%, final={}",
-                basePrice, discount.multiply(BigDecimal.valueOf(100)), finalPrice);
-
-        return finalPrice;
+        return finalPrice.setScale(2, RoundingMode.HALF_UP);
     }
+
 
     private BigDecimal calculateDepositAmount(Dealer dealer, BigDecimal totalAmount) {
         BigDecimal depositRate = dealer.getLevel().getDepositRate();

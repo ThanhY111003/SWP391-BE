@@ -78,9 +78,6 @@ public class VehicleModel {
     private List<VehicleInstance> vehicleInstances;
 
     @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Inventory> inventories;
-
-    @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderDetail> orderDetails;
 
     @PrePersist

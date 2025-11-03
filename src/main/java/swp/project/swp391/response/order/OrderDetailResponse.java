@@ -18,7 +18,6 @@ public class OrderDetailResponse {
     private String orderCode;
     private String status;
     private LocalDate orderDate;
-
     private DealerInfo dealer;          // thông tin đại lý mua xe
     private BigDecimal totalAmount;     // tổng tiền đơn hàng
     private BigDecimal depositAmount;   // số tiền đặt cọc

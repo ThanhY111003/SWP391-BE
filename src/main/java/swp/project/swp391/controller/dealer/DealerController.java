@@ -62,13 +62,17 @@ public class DealerController {
         return ResponseEntity.ok(ApiResponse.ok(dealerResponse, "Dealer đã được kích hoạt lại"));
     }
 
-    @Operation(summary = "Lấy danh sách Dealer", description = "Trả về danh sách tất cả các Dealer (phụ thuộc quyền)")
     @GetMapping
     public ResponseEntity<ApiResponse<List<DealerResponse>>> getAllDealers(Principal principal) {
-        User currentUser = principal != null ? guard.me() : null;
+        User currentUser = guard.me();
+
+        // ✅ Nếu bạn chỉ cho phép hãng xem tất cả dealer
+        guard.require(guard.has(currentUser, "dealer.read.all"));
+
         List<DealerResponse> dealerResponses = dealerService.getAllDealers(currentUser);
         return ResponseEntity.ok(ApiResponse.ok(dealerResponses, "Lấy danh sách Dealer thành công"));
     }
+
 
     @Operation(summary = "Lấy chi tiết Dealer", description = "Trả về thông tin chi tiết của một Dealer theo ID")
     @GetMapping("/{dealerId}")
