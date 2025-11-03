@@ -16,7 +16,7 @@ public class DefaultRoleConfig {
             ),
             "EVM_STAFF", List.of(
                     "user.create","user.read","user.update","user.inactive","user.reactivate","user.assignDealer",
-                    "vehicle.read", "vehicle.read_all", "vehicle.assign_customer", "vehicle.deactive", "vehicle.active","vehicle.update_status",
+                    "vehicle.read", "vehicle.read_all", "vehicle.assign_customer", "vehicle.deactive", "vehicle.active","vehicle.update_status","vehicle.transfer",
                     "vehicleModel.create","vehicleModel.update","vehicleModel.update","vehicleModel.viewAll","vehicleModel.inactive","vehicleModel.reactivate","vehicleModel.view",
                     "color.update","color.create","color.inactive","color.reactive",
                     "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
@@ -24,6 +24,7 @@ public class DefaultRoleConfig {
                     "dealer.create","dealer.read","dealer.update","dealer.read.all","dealer.inactive","dealer.reactivate",
                     "dealerLevel.read","dealerLevel.create","dealerLevel.update","dealerLevel.delete",
                     "customer.create","customer.read","customer.update","customer.activate","customer.deactivate",
+                    "vehicle_price.read","vehicle_price.manage_all","vehicle_price.create","vehicle_price.update","vehicle_price.deactivate","vehicle_price.activate",
                     "inventory.read","report.read","report.export"
             ),
             "DEALER_MANAGER", List.of(
@@ -31,8 +32,9 @@ public class DefaultRoleConfig {
                     "order.create","order.read","order.read_all",
                     "inventory.read",
                     "customer.create","customer.read","customer.update",
-                    "vehicle.read","vehicle.assign_customer",
+                    "vehicle.read","vehicle.assign_customer","vehicle.read_all","vehicle.update_status",
                     "vehicleModel.read","vehicleModel.viewAll",
+                    "vehicle_price.read",
                     "report.read"
             ),
             "DEALER_STAFF", List.of(
@@ -40,8 +42,9 @@ public class DefaultRoleConfig {
                     "order.create","order.read","order.read_all",
                     "inventory.read",
                     "customer.create","customer.read","customer.update",
-                    "vehicle.read","vehicle.assign_customer",
-                    "vehicleModel.read","vehicleModel.viewAll"
+                    "vehicle.read","vehicle.assign_customer","vehicle.read_all","vehicle.update_status",
+                    "vehicleModel.read","vehicleModel.viewAll",
+                    "vehicle_price.read"
             )
     );
 

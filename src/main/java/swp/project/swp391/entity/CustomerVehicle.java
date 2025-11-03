@@ -60,10 +60,5 @@ public class CustomerVehicle {
         if (saleDate == null) {
             saleDate = LocalDate.now();
         }
-        // Auto set warranty: 3 năm từ ngày mua
-        if (customerWarrantyStartDate == null) {
-            customerWarrantyStartDate = saleDate;
-            customerWarrantyEndDate = saleDate.plusYears(3);
-        }
     }
 }

@@ -7,10 +7,15 @@ import swp.project.swp391.constant.ErrorHandler;
 import swp.project.swp391.entity.*;
 import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.*;
+import swp.project.swp391.request.vehicle.AssignVehicleRequest;
+import swp.project.swp391.request.vehicle.TransferVehicleRequest;
+import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.vehicle.VehicleInstanceService;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,34 +26,39 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
     private final VehicleInstanceRepository vehicleRepo;
     private final CustomerRepository customerRepo;
     private final CustomerVehicleRepository customerVehicleRepo;
-    private final UserRepository userRepo;
+    private final InventoryRepository inventoryRepo;
     private final RbacGuard guard;
+    private final DealerRepository dealerRepo;
 
     // --------------------------------------------------------
-    // GET ALL (có lọc)
+    // GET ALL
     // --------------------------------------------------------
     @Override
     public List<VehicleInstanceResponse> getAll(Long dealerId, VehicleInstance.VehicleStatus status, Boolean activeOnly) {
         guard.require(guard.has(guard.me(), "vehicle.read_all"));
+        User current = guard.me();
 
         List<VehicleInstance> list = vehicleRepo.findAll();
 
-        // Nếu lọc theo đại lý
-        if (dealerId != null) {
+        // Nếu là Dealer role => chỉ thấy xe thuộc đại lý mình
+        if (isDealerRole(current)) {
+            Long myDealerId = getDealerId(current);
+            list = list.stream()
+                    .filter(v -> v.getCurrentDealer() != null && myDealerId.equals(v.getCurrentDealer().getId()))
+                    .collect(Collectors.toList());
+        } else if (dealerId != null) {
+            // ADMIN / EVM_STAFF có thể lọc dealer bất kỳ
             list = list.stream()
                     .filter(v -> v.getCurrentDealer() != null && dealerId.equals(v.getCurrentDealer().getId()))
                     .collect(Collectors.toList());
         }
 
-        // Nếu có status thì mới lọc theo trạng thái
         if (status != null) {
             list = list.stream()
                     .filter(v -> v.getStatus() == status)
                     .collect(Collectors.toList());
         }
 
-        // ✅ Mặc định show cả active & inactive
-        // => Chỉ lọc nếu người gọi muốn xem activeOnly = true
         if (Boolean.TRUE.equals(activeOnly)) {
             list = list.stream()
                     .filter(VehicleInstance::getIsActive)
@@ -60,128 +70,288 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
                 .collect(Collectors.toList());
     }
 
-
     // --------------------------------------------------------
     // GET BY ID
     // --------------------------------------------------------
     @Override
     public VehicleInstanceResponse getById(Long id) {
         guard.require(guard.has(guard.me(), "vehicle.read"));
-
         VehicleInstance v = vehicleRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
+
+        checkDealerOwnership(v);
         return VehicleInstanceResponse.fromEntity(v);
     }
 
     // --------------------------------------------------------
-    // ASSIGN TO CUSTOMER (BÁN XE)
+    // ASSIGN TO CUSTOMER
     // --------------------------------------------------------
     @Override
     @Transactional
-    public void assignToCustomer(Long vehicleId, Long customerId, Long soldByUserId) {
+    public CustomerVehicleResponse assignToCustomer(AssignVehicleRequest req) {
         guard.require(guard.has(guard.me(), "vehicle.assign_customer"));
+        User current = guard.me();
 
-        VehicleInstance vehicle = vehicleRepo.findById(vehicleId)
+        VehicleInstance vehicle = vehicleRepo.findById(req.getVehicleId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
 
-        // Không được gán nếu xe đã bị vô hiệu hóa
-        if (Boolean.FALSE.equals(vehicle.getIsActive())) {
+        checkDealerOwnership(vehicle);
+
+        if (Boolean.FALSE.equals(vehicle.getIsActive()))
             throw new BaseException(ErrorHandler.VEHICLE_IS_INACTIVE);
-        }
 
-        // Không được gán nếu xe đã bán
-        if (vehicle.getStatus() == VehicleInstance.VehicleStatus.SOLD) {
+        if (vehicle.getStatus() == VehicleInstance.VehicleStatus.SOLD)
             throw new BaseException(ErrorHandler.VEHICLE_ALREADY_SOLD);
-        }
 
-        Customer customer = customerRepo.findById(customerId)
+        if (vehicle.getCurrentDealer() == null)
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_OWNED_BY_DEALER);
+
+        Customer customer = customerRepo.findById(req.getCustomerId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.CUSTOMER_NOT_FOUND));
 
-        if (customerVehicleRepo.findByVehicleInstance(vehicle).isPresent()) {
+        if (customerVehicleRepo.findByVehicleInstance(vehicle).isPresent())
             throw new BaseException(ErrorHandler.VEHICLE_ALREADY_ASSIGNED);
+
+        User seller = current; // ✅ lấy từ token
+
+        // ✅ Ngày bán tự động = hôm nay
+        LocalDate saleDate = LocalDate.now();
+
+        // ✅ Bảo hành: mặc định bắt đầu từ ngày bán
+        LocalDate warrantyStart = req.getWarrantyStartDate() != null ? req.getWarrantyStartDate() : saleDate;
+        LocalDate warrantyEnd = req.getWarrantyEndDate();
+
+        if (warrantyEnd != null && warrantyEnd.isBefore(warrantyStart)) {
+            throw new BaseException(ErrorHandler.INVALID_WARRANTY_PERIOD);
         }
 
-        User seller = userRepo.findById(soldByUserId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.USER_NOT_FOUND));
+        BigDecimal salePrice = req.getSalePrice() != null
+                ? req.getSalePrice()
+                : (vehicle.getCurrentValue() != null
+                ? vehicle.getCurrentValue()
+                : vehicle.getVehicleModel().getManufacturerPrice());
 
         CustomerVehicle record = CustomerVehicle.builder()
                 .vehicleInstance(vehicle)
                 .customer(customer)
                 .soldByDealer(vehicle.getCurrentDealer())
                 .soldByUser(seller)
-                .salePrice(vehicle.getCurrentValue() != null
-                        ? vehicle.getCurrentValue()
-                        : vehicle.getVehicleModel().getManufacturerPrice())
+                .salePrice(salePrice)
+                .saleDate(saleDate) // ✅ tự động set hôm nay
+                .customerWarrantyStartDate(warrantyStart)
+                .customerWarrantyEndDate(warrantyEnd)
                 .build();
 
         customerVehicleRepo.save(record);
 
-        // Cập nhật trạng thái thành SOLD
         vehicle.setStatus(VehicleInstance.VehicleStatus.SOLD);
+
+        // ✅ Giảm tồn kho khi bán
+        Inventory inv = inventoryRepo.findByDealerIdAndVehicleModelColorId(
+                vehicle.getCurrentDealer().getId(),
+                vehicle.getVehicleModelColor().getId()
+        ).orElse(null);
+
+        if (inv != null) {
+            inv.setTotalQuantity(Math.max(inv.getTotalQuantity() - 1, 0));
+            inv.setAvailableQuantity(Math.max(inv.getAvailableQuantity() - 1, 0));
+            inv.setReservedQuantity(Math.max(inv.getReservedQuantity() - 1, 0));
+            inventoryRepo.save(inv);
+        }
+
         vehicleRepo.save(vehicle);
+
+        return CustomerVehicleResponse.fromEntity(record);
     }
 
+
     // --------------------------------------------------------
-    // DEACTIVATE (Chỉ cho xe trong kho)
+    // DEACTIVATE
     // --------------------------------------------------------
     @Override
     @Transactional
     public void deactivate(Long id) {
         guard.require(guard.has(guard.me(), "vehicle.deactive"));
-
         VehicleInstance v = vehicleRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
 
-        // Chỉ cho phép deactivate nếu xe đang trong kho
-        if (v.getStatus() != VehicleInstance.VehicleStatus.IN_STOCK) {
+        checkDealerOwnership(v);
+
+        if (v.getStatus() != VehicleInstance.VehicleStatus.IN_STOCK)
             throw new BaseException(ErrorHandler.ONLY_IN_STOCK_CAN_DEACTIVATE);
-        }
 
         v.setIsActive(false);
         vehicleRepo.save(v);
     }
 
     // --------------------------------------------------------
-    // ACTIVATE (chỉ xe bị deactive mới kích hoạt lại)
+    // ACTIVATE
     // --------------------------------------------------------
     @Override
     @Transactional
     public void activate(Long id) {
         guard.require(guard.has(guard.me(), "vehicle.active"));
-
         VehicleInstance v = vehicleRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
 
-        if (Boolean.TRUE.equals(v.getIsActive())) {
+        checkDealerOwnership(v);
+
+        if (Boolean.TRUE.equals(v.getIsActive()))
             throw new BaseException(ErrorHandler.VEHICLE_ALREADY_ACTIVE);
-        }
 
         v.setIsActive(true);
         vehicleRepo.save(v);
     }
 
+    // --------------------------------------------------------
+    // UPDATE STATUS
+    // --------------------------------------------------------
+    // VehicleInstanceServiceImpl
     @Override
     @Transactional
     public VehicleInstanceResponse updateStatus(Long id, VehicleInstance.VehicleStatus status) {
         guard.require(guard.has(guard.me(), "vehicle.update_status"));
-
         VehicleInstance v = vehicleRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
 
-        // ❌ Không cho đổi trạng thái nếu xe bị vô hiệu hoá
-        if (Boolean.FALSE.equals(v.getIsActive())) {
-            throw new BaseException(ErrorHandler.VEHICLE_IS_INACTIVE);
-        }
+        checkDealerOwnership(v);
 
-        // ❌ Không cho đổi trạng thái nếu xe đã bán
-        if (v.getStatus() == VehicleInstance.VehicleStatus.SOLD) {
+        if (Boolean.FALSE.equals(v.getIsActive()))
+            throw new BaseException(ErrorHandler.VEHICLE_IS_INACTIVE);
+
+        if (v.getStatus() == VehicleInstance.VehicleStatus.SOLD)
             throw new BaseException(ErrorHandler.VEHICLE_WAS_SOLDED);
-        }
+
+        // ❌ Không cho đổi trực tiếp sang SOLD trong method này
+        if (status == VehicleInstance.VehicleStatus.SOLD)
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Không thể đổi sang SOLD trực tiếp. Hãy gán xe cho khách hàng.");
 
         v.setStatus(status);
+        // ✅ Đồng bộ số lượng kho
+        Inventory inv = inventoryRepo.findByDealerIdAndVehicleModelColorId(
+                v.getCurrentDealer().getId(),
+                v.getVehicleModelColor().getId()
+        ).orElse(null);
+
+        if (inv != null) {
+            if (status == VehicleInstance.VehicleStatus.RESERVED) {
+                // Chuyển từ IN_STOCK → RESERVED
+                inv.setReservedQuantity(inv.getReservedQuantity() + 1);
+                inv.setAvailableQuantity(Math.max(inv.getAvailableQuantity() - 1, 0));
+            } else if (status == VehicleInstance.VehicleStatus.IN_STOCK) {
+                // Chuyển từ RESERVED → IN_STOCK
+                inv.setReservedQuantity(Math.max(inv.getReservedQuantity() - 1, 0));
+                inv.setAvailableQuantity(inv.getAvailableQuantity() + 1);
+            }
+            inventoryRepo.save(inv);
+        }
+
         vehicleRepo.save(v);
 
         return VehicleInstanceResponse.fromEntity(v);
     }
 
+
+    @Override
+    @Transactional
+    public VehicleInstanceResponse transferVehicle(TransferVehicleRequest req) {
+        // ✅ Kiểm tra quyền qua guard (chuẩn nhất)
+        guard.require(guard.has(guard.me(), "vehicle.transfer"));
+
+        // ====== 1. Lấy xe cần chuyển ======
+        VehicleInstance vehicle = vehicleRepo.findById(req.getVehicleInstanceId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
+
+        if (!Boolean.TRUE.equals(vehicle.getIsActive()))
+            throw new BaseException(ErrorHandler.VEHICLE_IS_INACTIVE);
+
+        if (vehicle.getStatus() == VehicleInstance.VehicleStatus.SOLD)
+            throw new BaseException(ErrorHandler.VEHICLE_WAS_SOLDED);
+
+        if (vehicle.getStatus() == VehicleInstance.VehicleStatus.RESERVED)
+            throw new BaseException(ErrorHandler.VEHICLE_IS_RESERVED);
+
+        Dealer sourceDealer = vehicle.getCurrentDealer();
+        Dealer targetDealer = dealerRepo.findById(req.getTargetDealerId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
+
+        if (sourceDealer == null)
+            throw new BaseException(ErrorHandler.DEALER_NOT_FOUND, "Xe này chưa thuộc đại lý nào.");
+
+        if (sourceDealer.getId().equals(targetDealer.getId()))
+            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Không thể chuyển xe sang cùng một đại lý.");
+
+        // ====== 2. Cập nhật kho nguồn ======
+        Inventory sourceInv = inventoryRepo.findByDealerIdAndVehicleModelColorId(
+                sourceDealer.getId(),
+                vehicle.getVehicleModelColor().getId()
+        ).orElse(null);
+
+        if (sourceInv != null) {
+            sourceInv.setTotalQuantity(Math.max(sourceInv.getTotalQuantity() - 1, 0));
+            sourceInv.setAvailableQuantity(Math.max(sourceInv.getAvailableQuantity() - 1, 0));
+            inventoryRepo.save(sourceInv);
+        }
+
+        // ====== 3. Cập nhật kho đích ======
+        Inventory targetInv = inventoryRepo.findByDealerIdAndVehicleModelColorId(
+                targetDealer.getId(),
+                vehicle.getVehicleModelColor().getId()
+        ).orElseGet(() -> Inventory.builder()
+                .dealer(targetDealer)
+                .vehicleModelColor(vehicle.getVehicleModelColor())
+                .totalQuantity(0)
+                .reservedQuantity(0)
+                .availableQuantity(0)
+                .isActive(true)
+                .build());
+
+        targetInv.setTotalQuantity(targetInv.getTotalQuantity() + 1);
+        targetInv.setAvailableQuantity(targetInv.getAvailableQuantity() + 1);
+        inventoryRepo.save(targetInv);
+
+        // ====== 4. Cập nhật dealer cho xe ======
+        vehicle.setCurrentDealer(targetDealer);
+        vehicleRepo.save(vehicle);
+
+        return VehicleInstanceResponse.fromEntity(vehicle);
+    }
+
+
+
+    // --------------------------------------------------------
+    // HELPER METHODS
+    // --------------------------------------------------------
+
+    private boolean isDealerRole(User user) {
+        return user.getRoles().stream()
+                .map(Role::getName)
+                .anyMatch(r -> r.equals("DEALER_MANAGER") || r.equals("DEALER_STAFF"));
+    }
+
+    private Long getDealerId(User user) {
+        if (user.getDealer() == null)
+            throw new BaseException(ErrorHandler.DEALER_NOT_FOUND);
+        return user.getDealer().getId();
+    }
+
+    private void checkDealerOwnership(VehicleInstance vehicle) {
+        User current = guard.me();
+
+        boolean isAdminOrEvm = current.getRoles().stream()
+                .map(Role::getName)
+                .anyMatch(r -> r.equals("ADMIN") || r.equals("EVM_STAFF"));
+
+        if (isAdminOrEvm)
+            return;
+
+        if (vehicle.getCurrentDealer() == null)
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_OWNED_BY_DEALER);
+
+        Long myDealerId = getDealerId(current);
+        if (!myDealerId.equals(vehicle.getCurrentDealer().getId())) {
+            throw new BaseException(ErrorHandler.FORBIDDEN);
+        }
+    }
 }

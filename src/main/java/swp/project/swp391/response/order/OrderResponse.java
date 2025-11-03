@@ -147,7 +147,7 @@ public class OrderResponse {
                                 .map(detail -> OrderDetailInfo.builder()
                                         .id(detail.getId())
                                         .vehicleModelName(detail.getVehicleModel().getName())
-                                        .vehicleColorName(detail.getVehicleColor().getColor().getColorName())
+                                        .vehicleColorName(detail.getVehicleModelColor().getColor().getColorName())
                                         .quantity(detail.getQuantity())
                                         .unitPrice(detail.getUnitPrice())
                                         .totalPrice(detail.getTotalPrice())

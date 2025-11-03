@@ -15,13 +15,6 @@ public interface VehicleInstanceRepository extends JpaRepository<VehicleInstance
 
     boolean existsByEngineNumber(String engineNumber);
 
-    List<VehicleInstance> findByIsActiveTrue();
+    List<VehicleInstance> findByCurrentDealerIdAndVehicleModelColorId(Long dealerId, Long vehicleModelColorId);
 
-    Optional<VehicleInstance> findByVin(String vin);
-
-    Optional<VehicleInstance> findByEngineNumber(String engineNumber);
-
-    List<VehicleInstance> findByVehicleModel(VehicleModel vehicleModel);
-
-    List<VehicleInstance> findByCurrentDealer(Dealer dealer);
 }

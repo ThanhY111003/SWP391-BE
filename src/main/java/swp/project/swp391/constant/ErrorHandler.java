@@ -26,6 +26,7 @@ public enum ErrorHandler {
     INVALID_INCOME_LEVEL(HttpStatus.BAD_REQUEST, 400, "Mức thu nhập không hợp lệ."),
     CUSTOMER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy khách hàng"),
     ACCOUNT_BLOCKED(HttpStatus.FORBIDDEN, 403, "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ quản trị viên để biết thêm chi tiết."),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 401, "Chưa xác thực người dùng"),
     // Role Errors
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy vai trò"),
     PERMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy quyền"),
@@ -71,8 +72,18 @@ public enum ErrorHandler {
     ONLY_IN_STOCK_CAN_DEACTIVATE(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể vô hiệu hóa xe đang trong kho (IN_STOCK)"),
     VEHICLE_ALREADY_ACTIVE(HttpStatus.BAD_REQUEST, 400, "Xe đã đang ở trạng thái hoạt động"),
     VEHICLE_WAS_SOLDED(HttpStatus.BAD_REQUEST, 400, "Xe đã được bán, không thể thay đổi trạng thái"),
+    VEHICLE_NOT_OWNED_BY_DEALER(HttpStatus.FORBIDDEN, 403, "Xe không thuộc sở hữu của đại lý hiện tại"),
+    INVALID_WARRANTY_PERIOD(HttpStatus.BAD_REQUEST, 400, "Ngày kết thức phải lớn hơn ngày bắt đầu bảo hành"),
+    VEHICLE_IS_RESERVED(HttpStatus.BAD_REQUEST, 400, "Xe đang được giữ chỗ và không thể chuyển kho"),
+    // Vehicle Price Errors
+    VEHICLE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy bảng giá xe"),
+
+    // Inventory Errors
+    INVENTORY_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy kho xe"),
 
     // Order Errors
+    CART_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy giỏ hàng"),
+    CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mục giỏ hàng"),
     ORDER_ALREADY_CANCELLED (HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã bị hủy"),
     ORDER_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã được xử lý và không thể hủy"),
     NOT_FOUND_INSTALLMENT_PLAN(HttpStatus.NOT_FOUND, 404, "Không tìm thấy kế hoạch trả góp"),
