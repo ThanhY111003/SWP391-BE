@@ -3,6 +3,7 @@ package swp.project.swp391.serviceImp.cart;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.hibernate.Hibernate;
 import swp.project.swp391.constant.ErrorHandler;
 import swp.project.swp391.entity.*;
 import swp.project.swp391.exception.BaseException;
@@ -12,7 +13,11 @@ import swp.project.swp391.response.cart.CartResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.cart.CartService;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,25 +26,27 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepo;
     private final CartItemRepository itemRepo;
     private final VehicleModelColorRepository colorRepo;
+    private final VehiclePriceRepository priceRepo;
     private final RbacGuard guard;
-
+    private final DealerRepository dealerRepo;
+    // ===========================================================
+    // ✅ 1. Add to cart
+    // ===========================================================
     @Override
     @Transactional
     public CartResponse addToCart(AddCartItemRequest req) {
         User user = guard.me();
-        Dealer dealer = user.getDealer();
-        if (dealer == null)
-            throw new BaseException(ErrorHandler.DEALER_NOT_FOUND);
+        // ✅ Ép reload dealer để đảm bảo có session và level
+        Dealer dealer = dealerRepo.findById(user.getDealer().getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
 
-        Cart cart = cartRepo.findByUserId(user.getId())
+        // ✅ Dùng fetch join để tránh lazy khi load giỏ hàng
+        Cart cart = cartRepo.findByUserIdWithAllRelations(user.getId())
                 .orElseGet(() -> cartRepo.save(Cart.builder()
                         .user(user)
                         .dealer(dealer)
+                        .items(new HashSet<>())
                         .build()));
-        // ✅ Phòng hờ: cart cũ trong DB có thể null items
-        if (cart.getItems() == null) {
-            cart.setItems(new HashSet<>());
-        }
 
         VehicleModelColor color = colorRepo.findById(req.getVehicleModelColorId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_COLOR_NOT_FOUND));
@@ -61,53 +68,63 @@ public class CartServiceImpl implements CartService {
         }
 
         cartRepo.save(cart);
-        return CartResponse.fromEntity(cart);
+        return buildCartResponse(cart, dealer);
     }
 
+    // ===========================================================
+    // ✅ 2. Update item quantity (+ hoặc - giống Shopee)
+    // ===========================================================
     @Override
     @Transactional
     public CartResponse updateItemQuantity(Long itemId, int newQuantity) {
         User user = guard.me();
 
-        // 1️⃣ Tìm item trong giỏ
         CartItem item = itemRepo.findById(itemId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.CART_ITEM_NOT_FOUND));
 
-        // 2️⃣ Kiểm tra quyền sở hữu — item này phải thuộc giỏ của user hiện tại
         if (!item.getCart().getUser().getId().equals(user.getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN, "Bạn không thể chỉnh sửa giỏ hàng của người khác.");
         }
 
-        // 3️⃣ Validate quantity
         if (newQuantity < 0) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST, "Số lượng không hợp lệ (phải ≥ 0).");
         }
 
         if (newQuantity == 0) {
-            // Nếu bằng 0 → xóa luôn item khỏi giỏ
             itemRepo.delete(item);
         } else {
-            // Cập nhật quantity mới
             item.setQuantity(newQuantity);
             itemRepo.save(item);
         }
 
-        // 4️⃣ Trả lại giỏ hàng mới nhất
-        Cart cart = cartRepo.findByUserId(user.getId())
+        // ✅ refetch dealer để đảm bảo có session
+        Dealer dealer = dealerRepo.findById(user.getDealer().getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
+
+        // ✅ fetch cart đầy đủ quan hệ
+        Cart cart = cartRepo.findByUserIdWithAllRelations(user.getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.CART_NOT_FOUND));
 
-        return CartResponse.fromEntity(cart);
+        return buildCartResponse(cart, dealer);
     }
 
 
+    // ===========================================================
+    // ✅ 3. Lấy giỏ hàng của chính mình
+    // ===========================================================
     @Override
+    @Transactional(readOnly = true)
     public CartResponse getMyCart() {
         User user = guard.me();
-        Cart cart = cartRepo.findByUserId(user.getId())
+        Cart cart = cartRepo.findByUserIdWithAllRelations(user.getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.CART_NOT_FOUND));
-        return CartResponse.fromEntity(cart);
+
+        return buildCartResponse(cart, cart.getDealer());
     }
 
+    // ===========================================================
+    // ✅ 4. Xóa item khỏi giỏ
+    // ===========================================================
     @Override
     @Transactional
     public void removeItem(Long itemId) {
@@ -116,10 +133,57 @@ public class CartServiceImpl implements CartService {
         itemRepo.delete(item);
     }
 
+    // ===========================================================
+    // ✅ 5. Xóa toàn bộ giỏ hàng
+    // ===========================================================
     @Override
     @Transactional
     public void clearCart() {
         User user = guard.me();
         cartRepo.deleteByUserId(user.getId());
     }
+
+    // ===========================================================
+    // ✅ 6. Tính giá và map về response
+    // ===========================================================
+    private CartResponse buildCartResponse(Cart cart, Dealer dealer) {
+        Hibernate.initialize(dealer.getLevel()); // tránh LazyInitializationException
+
+        DealerLevel dealerLevel = dealer.getLevel();
+        LocalDate today = LocalDate.now();
+
+        List<CartResponse.Item> items = cart.getItems().stream().map(i -> {
+            VehicleModelColor color = i.getVehicleModelColor();
+
+            // ✅ Ưu tiên lấy giá từ bảng VehiclePrice
+            BigDecimal unitPrice = priceRepo.findActiveByVehicleModelColorAndDealerLevel(
+                            color, dealerLevel, today
+                    ).map(VehiclePrice::getWholesalePrice)
+                    // ✅ Nếu không có bảng giá, fallback = manufacturerPrice + priceAdjustment
+                    .orElseGet(() -> {
+                        BigDecimal base = color.getVehicleModel().getManufacturerPrice();
+                        BigDecimal adj = color.getPriceAdjustment() != null ? color.getPriceAdjustment() : BigDecimal.ZERO;
+                        return base.add(adj);
+                    });
+
+            BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(i.getQuantity()));
+
+            return CartResponse.Item.builder()
+                    .id(i.getId())
+                    .vehicleModelColorId(color.getId())
+                    .modelName(color.getVehicleModel().getName())
+                    .colorName(color.getColor().getColorName())
+                    .quantity(i.getQuantity())
+                    .unitPrice(unitPrice)
+                    .totalPrice(totalPrice)
+                    .build();
+        }).collect(Collectors.toList());
+
+        BigDecimal cartTotal = items.stream()
+                .map(CartResponse.Item::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return CartResponse.fromEntity(cart, cartTotal, items);
+    }
+
 }

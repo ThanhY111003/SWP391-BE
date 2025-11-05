@@ -52,7 +52,6 @@ public class OrderServiceImpl implements OrderService {
         for (CreateOrderRequest.OrderDetailRequest detailReq : request.getOrderDetails()) {
             VehicleModelColor vehicleModelColor = validateAndGetVehicleModelColor(detailReq.getVehicleModelColorId());
             VehicleModel vehicleModel = vehicleModelColor.getVehicleModel(); // Lấy từ quan hệ
-            Color color = vehicleModelColor.getColor();
 
             // Lấy giá với chiết khấu
             BigDecimal unitPrice = getVehiclePriceForDealer(vehicleModel, vehicleModelColor, dealer.getLevel());
@@ -76,8 +75,8 @@ public class OrderServiceImpl implements OrderService {
         validateMaxOrderQuantity(dealer, totalQuantity);
 
         // 4. TÍNH TIỀN CỌC (nếu trả góp)
-        BigDecimal depositAmount = BigDecimal.ZERO;
-        BigDecimal remainingAmount = totalAmount;  // Khởi tạo remainingAmount là totalAmount
+        BigDecimal depositAmount;
+        BigDecimal remainingAmount;  // Khởi tạo remainingAmount là totalAmount
 
         if (Boolean.TRUE.equals(request.getIsInstallment())) {
             // Nếu là trả góp, tính cọc và tiền còn lại
@@ -160,35 +159,6 @@ public class OrderServiceImpl implements OrderService {
         return dealer;
     }
 
-    private VehicleModel validateAndGetVehicleModel(Long modelId) {
-        // Kiểm tra ID hợp lệ (phải lớn hơn 0)
-        if (modelId == null || modelId <= 0) {
-            throw new BaseException(ErrorHandler.VEHICLE_MODEL_NOT_FOUND);
-        }
-
-        VehicleModel model = vehicleModelRepository.findById(modelId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_NOT_FOUND, "Vehicle Model không tồn tại với ID: " + modelId));
-
-        if (!Boolean.TRUE.equals(model.getIsActive())) {
-            throw new BaseException(ErrorHandler.VEHICLE_MODEL_NOT_FOUND, "Vehicle Model đã bị vô hiệu hóa: " + model.getName());
-        }
-        return model;
-    }
-
-
-
-    private VehicleModelColor validateAndGetVehicleColor(Long colorId, VehicleModel vehicleModel) {
-        // Tìm màu xe trong cơ sở dữ liệu theo ID
-        VehicleModelColor color = vehicleModelColorRepository.findById(colorId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_COLOR_NOT_FOUND));
-
-        // Kiểm tra xem màu xe có bị vô hiệu hóa không
-        if (!Boolean.TRUE.equals(color.getIsActive())) {
-            throw new BaseException(ErrorHandler.COLOR_ISACTIVE_NOT_FOUND);
-        }
-
-        return color;
-    }
 
 
     private void validateMaxOrderQuantity(Dealer dealer, int totalQuantity) {

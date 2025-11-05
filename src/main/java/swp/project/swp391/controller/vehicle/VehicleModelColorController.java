@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.entity.User;
+import swp.project.swp391.request.vehicle.VehicleModelColorUpdateRequest;
 import swp.project.swp391.response.vehicle.VehicleModelColorResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.vehicle.VehicleModelColorService;
@@ -54,19 +55,20 @@ public class VehicleModelColorController {
         return ResponseEntity.ok(ApiResponse.ok(list, "Lấy danh sách màu của model thành công"));
     }
 
-    @Operation(summary = "Cập nhật chênh lệch giá của màu", description = "Cập nhật phần chênh lệch giá cho một màu đã gán với model cụ thể")
-    @PatchMapping("/{colorId}/price-adjustment")
-    public ResponseEntity<ApiResponse<VehicleModelColorResponse>> updatePriceAdjustment(
+    @PatchMapping("/{colorId}")
+    @Operation(summary = "Cập nhật thông tin màu của model",
+            description = "Cập nhật chênh lệch giá và/hoặc hình ảnh cho màu đã gán với model xe")
+    public ResponseEntity<ApiResponse<VehicleModelColorResponse>> updateColorInfo(
             @PathVariable Long modelId,
             @PathVariable Long colorId,
-            @RequestParam BigDecimal newAdjustment) {
+            @RequestBody VehicleModelColorUpdateRequest request) {
 
         User currentUser = guard.me();
-        VehicleModelColorResponse response =
-                service.updatePriceAdjustment(modelId, colorId, newAdjustment, currentUser);
+        VehicleModelColorResponse response = service.updateColorInfo(modelId, colorId, request, currentUser);
 
-        return ResponseEntity.ok(ApiResponse.ok(response, "Cập nhật chênh lệch giá thành công"));
+        return ResponseEntity.ok(ApiResponse.ok(response, "Cập nhật thông tin màu xe thành công"));
     }
+
 
     @Operation(summary = "Gỡ màu khỏi model", description = "Xóa quan hệ giữa model và màu cụ thể, yêu cầu quyền 'vehicleModelColor.delete'")
     @DeleteMapping("/{colorId}")

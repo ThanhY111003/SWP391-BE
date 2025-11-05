@@ -190,7 +190,8 @@ public class VehicleModelServiceImpl implements VehicleModelService {
                 model.getCargoVolume(),
                 model.getManufacturerPrice(),
                 model.getImageUrl(),
-                model.getIsActive()
+                model.getIsActive(),
+                model.getDescription()
         );
     }
 }
