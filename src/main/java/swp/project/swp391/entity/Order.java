@@ -59,7 +59,7 @@ public class Order {
     @Column(name = "actual_delivery_date")
     private LocalDate actualDeliveryDate;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String notes;
 
     @Column(name = "created_at")

@@ -54,8 +54,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String address;
+
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

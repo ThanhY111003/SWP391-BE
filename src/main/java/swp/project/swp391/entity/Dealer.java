@@ -24,7 +24,7 @@ public class Dealer {
     @Column(unique = true, nullable = false)
     private String code;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String address;
 
     @Column(name = "phone_number")
