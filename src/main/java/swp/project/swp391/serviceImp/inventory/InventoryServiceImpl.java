@@ -45,10 +45,20 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     public List<VehicleInstanceResponse> getVehiclesByInventory(Long inventoryId) {
+        User current = guard.me();
+
         Inventory inv = inventoryRepo.findById(inventoryId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.INVENTORY_NOT_FOUND));
 
-        // ✅ Lấy các xe cùng dealer & cùng màu/model với inventory đó
+        // ✅ Nếu user là dealer -> chỉ được xem kho của chính mình
+        if (isDealerRole(current)) {
+            Long currentDealerId = current.getDealer().getId();
+            if (!inv.getDealer().getId().equals(currentDealerId)) {
+                throw new BaseException(ErrorHandler.FORBIDDEN);
+            }
+        }
+
+        // ✅ Lấy danh sách xe hợp lệ
         List<VehicleInstance> vehicles = vehicleRepo
                 .findByCurrentDealerIdAndVehicleModelColorId(
                         inv.getDealer().getId(),
