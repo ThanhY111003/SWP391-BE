@@ -118,6 +118,7 @@ public class DataInitializer implements CommandLineRunner {
 
                 // Order
                 {"order", "update", "Cập nhật đơn hàng", "Cập nhật trạng thái đơn"},
+                {"order", "cancel", "Huỷ đơn hàng", "Đại lý huỷ đơn hàng(chỉ huỷ được PEDING)"},
                 {"order", "approve", "Phê duyệt đơn hàng", "Phê duyệt đơn hàng từ trạng thái PENDING"},
                 {"order", "read_all_EVM", "Xem tất cả đơn hàng", "Xem tất cả đơn hàng của tất cả đại lý"},
                 {"order", "read_EVM", "Xem đơn hàng", "Xem đơn hàng cụ thể của một đại lý"},
@@ -159,7 +160,8 @@ public class DataInitializer implements CommandLineRunner {
                 {"vehicle_price", "activate", "Kích hoạt bảng giá xe", "Kích hoạt bảng giá xe"},
 
                 // Report
-                {"report", "read", "Xem báo cáo", "Xem các báo cáo"},
+                {"admin_report", "read", "Xem báo cáo toàn hệ thống", "Xem các báo cáo toàn hệ thống"},
+                {"dealer_report", "read", "Xem báo cáo dành cho dealer Manager", "Xem các báo cáo dành cho dealer Manager"},
                 {"report", "export", "Xuất báo cáo", "Xuất báo cáo ra file"}
         };
 

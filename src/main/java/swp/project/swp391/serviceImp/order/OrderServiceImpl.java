@@ -10,11 +10,13 @@ import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.*;
 import swp.project.swp391.request.order.CreateOrderRequest;
 import swp.project.swp391.response.order.OrderResponse;
+import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.order.OrderService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -25,9 +27,33 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final DealerRepository dealerRepository;
     private final UserRepository userRepository;
-    private final VehicleModelRepository vehicleModelRepository;
     private final VehicleModelColorRepository vehicleModelColorRepository;
     private final VehiclePriceRepository vehiclePriceRepository;
+    private final RbacGuard guard;
+
+    @Override
+    @Transactional
+    public void cancelOrder(Long orderId) {
+        User current = guard.me();
+        guard.require(guard.has(current, "order.cancel"));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+
+        // Chỉ huỷ đơn của dealer mình
+        if (!Objects.equals(order.getBuyerDealer().getId(), current.getDealer().getId())) {
+            throw new BaseException(ErrorHandler.FORBIDDEN);
+        }
+
+        // Chỉ được huỷ đơn PENDING
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Chỉ có thể huỷ đơn hàng đang chờ duyệt (PENDING).");
+        }
+
+        order.setStatus(Order.OrderStatus.CANCELLED);
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+    }
 
     @Override
     @Transactional

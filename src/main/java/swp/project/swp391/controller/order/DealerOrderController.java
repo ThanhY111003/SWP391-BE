@@ -51,4 +51,12 @@ public class DealerOrderController {
         OrderResponse res = dealerOrderQueryService.getOrderById(orderId, me);
         return ResponseEntity.ok(ApiResponse.ok(res, "Lấy chi tiết đơn hàng thành công"));
     }
+
+    @DeleteMapping("/{orderId}/cancel")
+    @Operation(summary = "Huỷ đơn hàng (Dealer)", description = "Chỉ huỷ được đơn đang ở trạng thái PENDING.")
+    public ResponseEntity<ApiResponse<Void>> cancelOrder(@PathVariable Long orderId) {
+        orderService.cancelOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Huỷ đơn hàng thành công"));
+    }
+
 }

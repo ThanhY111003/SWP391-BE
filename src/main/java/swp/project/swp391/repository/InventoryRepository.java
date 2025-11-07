@@ -31,4 +31,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     @Query("SELECT i FROM Inventory i WHERE (:dealerId IS NULL OR i.dealer.id = :dealerId)")
     List<Inventory> findAllByDealerIdNullable(@Param("dealerId") Long dealerId);
+
+    List<Inventory> findByDealer_Id(Long dealerId);
+
 }
