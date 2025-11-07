@@ -149,7 +149,7 @@ public class OrderApprovalServiceImpl implements OrderApprovalService {
         log.info("Order {} approved successfully. Created {} vehicle instances",
                 order.getOrderCode(), created);
 
-        return new OrderApproveResponse(
+        return new OrderApprgioveResponse(
                 order.getId(),
                 order.getOrderCode(),
                 order.getStatus().name(),

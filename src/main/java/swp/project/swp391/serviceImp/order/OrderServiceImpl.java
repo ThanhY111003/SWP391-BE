@@ -211,12 +211,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void validateInstallmentRequest(CreateOrderRequest request, Dealer dealer) {
+        Integer months = request.getInstallmentMonths();
         if (request.getInstallmentMonths() == null || request.getInstallmentMonths() < 1) {
             throw new IllegalArgumentException("Phải chọn số tháng trả góp hợp lệ");
         }
 
         Integer maxInstallmentMonths = dealer.getLevel().getMaxInstallmentMonths();
-        if (maxInstallmentMonths == null) {
+        if (maxInstallmentMonths == null || maxInstallmentMonths == 0) {
             throw new IllegalStateException("Level của dealer không hỗ trợ trả góp");
         }
 
@@ -224,6 +225,10 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalStateException(
                     String.format("Số tháng trả góp vượt quá giới hạn. Tối đa: %d tháng", maxInstallmentMonths)
             );
+        }
+
+        if (months % 3 != 0) {
+            throw new IllegalStateException("Kỳ hạn trả góp chỉ được phép là 3, 6, 9 hoặc 12 tháng.");
         }
     }
 

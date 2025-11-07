@@ -28,6 +28,11 @@ public class DealerLevelServiceImpl implements DealerLevelService {
     public DealerLevelResponse createDealerLevel(CreateDealerLevelRequest request) {
         // Kiểm tra quyền tạo Dealer Level
         guard.require(guard.has(guard.me(), "dealerLevel.create"));
+        Integer months = request.getMaxInstallmentMonths();
+        if (months < 0 || months > 12 || (months != 0 && months % 3 != 0)) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Số tháng trả góp phải là 0 hoặc chia hết cho 3 (tối đa 12).");
+        }
 
         // Kiểm tra xem levelNumber đã tồn tại chưa
         if (dealerLevelRepository.existsByLevelNumber(request.getLevelNumber())) {
@@ -56,6 +61,11 @@ public class DealerLevelServiceImpl implements DealerLevelService {
     public DealerLevelResponse editDealerLevel(Long id, EditDealerLevelRequest request) {
         // Kiểm tra quyền sửa Dealer Level
         guard.require(guard.has(guard.me(), "dealerLevel.update"));
+        Integer months = request.getMaxInstallmentMonths();
+        if (months < 0 || months > 12 || (months != 0 && months % 3 != 0)) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Số tháng trả góp phải là 0 hoặc chia hết cho 3 (tối đa 12).");
+        }
 
         DealerLevel dealerLevel = dealerLevelRepository.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_LEVEL_NOT_FOUND));
