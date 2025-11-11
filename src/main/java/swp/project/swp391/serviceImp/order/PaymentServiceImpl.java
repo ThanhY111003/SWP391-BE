@@ -40,6 +40,11 @@ public class PaymentServiceImpl implements PaymentService {
         if (!Boolean.TRUE.equals(order.getIsInstallment())) {
             throw new BaseException(ErrorHandler.INVALID_INSTALLMENT_REQUEST);
         }
+        if (order.getStatus() != Order.OrderStatus.INSTALLMENT_ACTIVE) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Chỉ có thể xác nhận thanh toán cho đơn hàng đang hoạt động trả góp (INSTALLMENT_ACTIVE)");
+        }
+
 
         // 🔹 2. Lấy kỳ trả góp theo installmentNumber
         InstallmentPlan plan = planRepo.findByOrderIdAndInstallmentNumber(orderId, installmentNumber)
@@ -90,7 +95,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public OrderResponse cancelOrder(Long orderId, User currentUser) {
         // ✅ 1. Chỉ Admin hoặc người có quyền "order.cancel" mới được hủy
-        guard.require(guard.has(currentUser, "order.cancel"));
+        guard.require(guard.has(currentUser, "order.cancel_EVM"));
 
         // ✅ 2. Lấy order
         Order order = orderRepo.findById(orderId)

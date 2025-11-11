@@ -15,9 +15,13 @@ import java.util.Optional;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM Inventory i WHERE i.dealer.id = :dealerId AND i.vehicleModelColor.id = :vehicleModelColorId")
-    Optional<Inventory> lockByDealerIdAndVehicleModelColorId(Long dealerId, Long vehicleModelColorId);
+    Optional<Inventory> lockByDealerIdAndVehicleModelColorId(
+            @Param("dealerId") Long dealerId,
+            @Param("vehicleModelColorId") Long vehicleModelColorId
+    );
 
     @Query("SELECT i FROM Inventory i " +
             "WHERE i.dealer.id = :dealerId " +

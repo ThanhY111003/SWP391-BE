@@ -20,30 +20,36 @@ public class DefaultRoleConfig {
                     "vehicleModel.create","vehicleModel.update","vehicleModel.update","vehicleModel.viewAll","vehicleModel.inactive","vehicleModel.reactivate","vehicleModel.view",
                     "color.update","color.create","color.inactive","color.reactive",
                     "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
-                    "order.approve","order.update_payment","order.read_EVM","order.read_all_EVM","order.cancel",
+                    "order.approve","order.update_payment","order.read_EVM","order.read_all_EVM","order.cancel_EVM","order.ship","order.read_vehicle_EVM","defect.approve",
+                    "defect.read","defect.repair_complete",
                     "dealer.create","dealer.read","dealer.update","dealer.read.all","dealer.inactive","dealer.reactivate",
                     "dealerLevel.read","dealerLevel.create","dealerLevel.update","dealerLevel.delete",
                     "customer.create","customer.read","customer.update","customer.activate","customer.deactivate",
+                    "warranty.read_all","warranty.complete","warranty.approve","warranty.reject",
                     "vehicle_price.read","vehicle_price.manage_all","vehicle_price.create","vehicle_price.update","vehicle_price.deactivate","vehicle_price.activate",
                     "inventory.read"
             ),
             "DEALER_MANAGER", List.of(
                     "user.create","user.read","user.update","user.inactive","user.reactivate",
-                    "order.create","order.read","order.read_all","order.cancel",
+                    "order.create","order.read","order.read_all","order.cancel","order.read_vehicle","order.receive","vehicle.report_defect",
+                    "defect.read","vehicle.receive_repair","warranty.cancel",
                     "inventory.read",
                     "customer.create","customer.read","customer.update",
                     "vehicle.read","vehicle.assign_customer","vehicle.read_all","vehicle.update_status",
                     "vehicleModel.read","vehicleModel.viewAll",
                     "vehicle_price.read",
+                    "warranty.create","warranty.read","warranty.confirm",
                     "dealer_report.read"
             ),
             "DEALER_STAFF", List.of(
                     "user.read","user.update",
-                    "order.create","order.read","order.read_all",
+                    "order.create","order.read","order.read_all","order.cancel","order.read_vehicle","order.receive","vehicle.report_defect",
+                    "defect.read","vehicle.receive_repair","warranty.cancel",
                     "inventory.read",
                     "customer.create","customer.read","customer.update",
                     "vehicle.read","vehicle.assign_customer","vehicle.read_all","vehicle.update_status",
                     "vehicleModel.read","vehicleModel.viewAll",
+                    "warranty.create","warranty.read","warranty.confirm",
                     "vehicle_price.read"
             )
     );

@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import swp.project.swp391.api.ApiResponse;
+import swp.project.swp391.entity.User;
 import swp.project.swp391.response.order.OrderApproveResponse;
 import swp.project.swp391.response.order.OrderResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.order.OrderApprovalService;
 import swp.project.swp391.service.order.OrderQueryService;
@@ -62,5 +64,20 @@ public class AdminOrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable Long orderId) {
         OrderResponse res = paymentService.cancelOrder(orderId, guard.me());
         return ResponseEntity.ok(ApiResponse.ok(res, "Hủy đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Lấy danh sách xe trong đơn hàng", description = "Admin/EVM xem tất cả xe (VehicleInstance) thuộc đơn hàng cụ thể")
+    @GetMapping("/{orderId}/vehicles")
+    public ResponseEntity<ApiResponse<List<VehicleInstanceResponse>>> getVehiclesByOrder(@PathVariable Long orderId) {
+        List<VehicleInstanceResponse> vehicles = adminOrderQueryService.getVehiclesByOrder(orderId, guard.me());
+        return ResponseEntity.ok(ApiResponse.ok(vehicles, "Lấy danh sách xe trong đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Xác nhận giao hàng (Mark as Shipping)", description = "Hãng chuyển đơn CONFIRMED sang SHIPPING khi bắt đầu vận chuyển")
+    @PatchMapping("/{orderId}/shipping")
+    public ResponseEntity<ApiResponse<OrderResponse>> markAsShipping(@PathVariable Long orderId) {
+        User me = guard.me();
+        OrderResponse res = approvalService.markAsShipping(orderId, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Cập nhật trạng thái SHIPPING thành công"));
     }
 }

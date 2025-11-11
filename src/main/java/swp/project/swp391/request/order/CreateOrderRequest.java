@@ -17,7 +17,7 @@ public class CreateOrderRequest {
     private Boolean isInstallment;
 
     @Min(value = 0, message = "Số tháng trả góp phải từ 0 trở lên")
-    @Max(value = 60, message = "Số tháng trả góp không được quá 60 tháng")
+    @Max(value = 12, message = "Số tháng trả góp không được quá 12 tháng")
     private Integer installmentMonths; // Số tháng trả góp
 
     @Size(max = 1000, message = "Ghi chú không được quá 1000 ký tự")

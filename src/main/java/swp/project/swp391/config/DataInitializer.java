@@ -118,7 +118,8 @@ public class DataInitializer implements CommandLineRunner {
 
                 // Order
                 {"order", "update", "Cập nhật đơn hàng", "Cập nhật trạng thái đơn"},
-                {"order", "cancel", "Huỷ đơn hàng", "Đại lý huỷ đơn hàng(chỉ huỷ được PEDING)"},
+                {"order", "cancel", "Huỷ đơn hàng", "Dealer huỷ đơn hàng(chỉ huỷ được PEDING)"},
+                {"order", "cancel_EVM", "Huỷ đơn hàng", "Đại lý huỷ đơn hàng(chỉ huỷ được PEDING)"},
                 {"order", "approve", "Phê duyệt đơn hàng", "Phê duyệt đơn hàng từ trạng thái PENDING"},
                 {"order", "read_all_EVM", "Xem tất cả đơn hàng", "Xem tất cả đơn hàng của tất cả đại lý"},
                 {"order", "read_EVM", "Xem đơn hàng", "Xem đơn hàng cụ thể của một đại lý"},
@@ -127,7 +128,15 @@ public class DataInitializer implements CommandLineRunner {
                 {"order", "create", "Tạo đơn hàng", "Tạo yêu cầu nhập xe"},
                 {"order", "update_payment", "Cập nhật thanh toán", "Xác nhận thanh toán kỳ trả góp"},
                 {"order", "cancel", "Hủy đơn hàng", "Hủy đơn hàng đang ở trạng thái CONFIRMED"},
-
+                {"order", "ship", "Giao xe", "Xác nhận giao xe cho đại lý"},
+                {"order", "receive", "Nhận xe", "Xác nhận nhận xe từ EVM"},
+                {"order", "read_vehicle_EVM", "Xem xe trong đơn hàng", "Xem danh sách xe trong đơn hàng"},
+                {"vehicle","report_defect","Báo cáo xe lỗi","Báo cáo xe lỗi từ đại lý"},
+                {"order", "read_vehicle", "Xem xe trong đơn hàng dành cho đại lý", "Xem danh sách xe trong đơn hàng dành cho đại lý"},
+                {"defect", "approve", "Phê duyệt báo cáo xe lỗi", "Phê duyệt báo cáo xe lỗi từ đại lý"},
+                {"defect", "read", "Xem báo cáo xe lỗi", "Xem danh sách báo cáo xe lỗi"},
+                {"defect", "repair_complete", "Xác nhận sửa xong xe lỗi", "Xác nhận đã sửa xong xe lỗi"},
+                {"vehicle", "receive_repair", "Xác nhận nhận lại xe sau sửa chữa", "Xác nhận nhận lại xe sau khi sửa chữa xong"},
                 // Dealer
                 {"dealer", "create", "Tạo đại lý", "Thêm đại lý mới"},
                 {"dealer", "read", "Xem đại lý", "Xem thông tin đại lý"},
@@ -158,6 +167,16 @@ public class DataInitializer implements CommandLineRunner {
                 {"vehicle_price", "update", "Sửa bảng giá xe", "Sửa bảng giá xe"},
                 {"vehicle_price", "deactivate", "Vô hiệu hoá bảng giá xe", "Vô hiệu hoá bảng giá xe"},
                 {"vehicle_price", "activate", "Kích hoạt bảng giá xe", "Kích hoạt bảng giá xe"},
+
+                // Warranty
+                {"warranty", "create", "Tạo yêu cầu bảo hành/sửa chữa", "Tạo yêu cầu bảo hành/sửa chữa cho xe"},
+                {"warranty", "read", "Xem yêu cầu bảo hành/sửa chữa", "Xem thông tin yêu cầu bảo hành/sửa chữa của xe"},
+                {"warranty", "read_all", "Xem tất cả yêu cầu bảo hành/sửa chữa", "Xem tất cả yêu cầu bảo hành/sửa chữa từ các đại lý"},
+                {"warranty", "approve", "Phê duyệt yêu cầu bảo hành/sửa chữa", "Phê duyệt yêu cầu bảo hành/sửa chữa từ đại lý"},
+                {"warranty", "complete", "Hoàn thành yêu cầu bảo hành/sửa chữa", "Đánh dấu hoàn thành yêu cầu bảo hành/sửa chữa"},
+                {"warranty", "confirm", "Xác nhận đã nhận xe sau bảo hành/sửa chữa", "Xác nhận đã nhận xe sau khi hoàn thành bảo hành/sửa chữa"},
+                {"warranty", "reject", "Từ chối yêu cầu bảo hành/sửa chữa", "Từ chối yêu cầu bảo hành/sửa chữa từ đại lý"},
+                {"warranty", "cancel", "Hủy yêu cầu bảo hành/sửa chữa", "Hủy yêu cầu bảo hành/sửa chữa từ đại lý"},
 
                 // Report
                 {"admin_report", "read", "Xem báo cáo toàn hệ thống", "Xem các báo cáo toàn hệ thống"},

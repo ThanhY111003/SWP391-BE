@@ -64,6 +64,8 @@ public enum ErrorHandler {
 
     // Vehicle Instance Errors
     VEHICLE_INSTANCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy xe"),
+    VEHICLE_INSTANCE_DUPLICATE(HttpStatus.CONFLICT, 409, "Xe này đã được báo cáo lỗi trước đó"),
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy báo cáo lỗi xe"),
     VEHICLE_ALREADY_SOLD(HttpStatus.BAD_REQUEST, 400, "Xe đã được bán cho khách khác"),
     VEHICLE_ALREADY_ASSIGNED(HttpStatus.BAD_REQUEST, 400, "Xe này đã được gán cho khách hàng"),
     VEHICLE_NOT_ELIGIBLE_DELETE(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể xóa xe còn trong kho"),
@@ -77,12 +79,14 @@ public enum ErrorHandler {
     VEHICLE_IS_RESERVED(HttpStatus.BAD_REQUEST, 400, "Xe đang được giữ chỗ và không thể chuyển kho"),
     // Vehicle Price Errors
     VEHICLE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy bảng giá xe"),
+    INVALID_SALE_PRICE_RANGE(HttpStatus.BAD_REQUEST, 400, "Giá bán không hợp được vượt 20% lợi nhuận so với giá mua từ hãng"),
 
     // Inventory Errors
     INVENTORY_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy kho xe"),
 
     // Order Errors
     CART_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy giỏ hàng"),
+    MAX_ORDER_QUANTITY_EXCEEDED(HttpStatus.BAD_REQUEST, 400, "Vượt quá số lượng đơn hàng tối đa cho phép theo cấp độ đại lý"),
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy mục giỏ hàng"),
     ORDER_ALREADY_CANCELLED (HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã bị hủy"),
     ORDER_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, 400, "Đơn hàng đã được xử lý và không thể hủy"),
@@ -92,7 +96,6 @@ public enum ErrorHandler {
     INVALID_INSTALLMENT_REQUEST(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể thực hiện hành động này trên các đơn hàng trả góp"),
     ONLY_CONFIRMED_REQUEST(HttpStatus.BAD_REQUEST, 400, "Chỉ có thể thực hiện hành động này trên các đơn hàng ở trạng thái CONFIRMED"),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy đơn hàng");
-
 
 
     private final HttpStatus status;

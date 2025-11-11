@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -18,6 +17,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class Order {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,8 +25,8 @@ public class Order {
     @Column(name = "order_code", unique = true, nullable = false)
     private String orderCode;
 
-    @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING;
 
@@ -38,7 +38,6 @@ public class Order {
     private BigDecimal depositAmount; // Số tiền cọc (nếu trả góp)
 
     // ===== Thông tin thanh toán =====
-
     @Column(name = "full_payment_date")
     private LocalDate fullPaymentDate; // Ngày thanh toán đầy đủ
 
@@ -83,17 +82,13 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<InstallmentPlan> installmentPlans = new HashSet<>();
 
-
-    // ===== Phương thức tính toán (KHÔNG lưu vào DB) =====
-
+    // ====== PHƯƠNG THỨC TÍNH TOÁN (Transient) ======
 
     @Transient
     public BigDecimal getPaidAmount() {
         if (Boolean.FALSE.equals(isInstallment)) {
-            // Trả thẳng: trả hết khi hoàn tất
             return (status == OrderStatus.COMPLETED) ? totalAmount : BigDecimal.ZERO;
         } else {
-            // Trả góp: cọc + tổng các kỳ đã trả
             BigDecimal paidInstallments = installmentPlans == null ? BigDecimal.ZERO :
                     installmentPlans.stream()
                             .map(InstallmentPlan::getPaidAmount)
@@ -106,12 +101,8 @@ public class Order {
 
     @Transient
     public BigDecimal getRemainingAmount() {
-        if (totalAmount == null) {
-            return BigDecimal.ZERO;
-        }
-        // Trừ tiền cọc và số tiền đã trả
-        BigDecimal remaining = totalAmount.subtract(getDepositAmount()).subtract(getPaidAmount());
-        // Đảm bảo không có giá trị âm
+        if (totalAmount == null) return BigDecimal.ZERO;
+        BigDecimal remaining = totalAmount.subtract(getPaidAmount());
         return remaining.max(BigDecimal.ZERO);
     }
 
@@ -123,22 +114,29 @@ public class Order {
 
     @Transient
     public BigDecimal getPaymentProgress() {
-        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
+        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
         return getPaidAmount()
                 .divide(totalAmount, 4, BigDecimal.ROUND_HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
     }
+
+    /**
+     * Kiểm tra nếu tất cả chi tiết đã giao thành công
+     */
+    @Transient
+    public boolean isAllDelivered() {
+        if (orderDetails == null || orderDetails.isEmpty()) return false;
+        return orderDetails.stream()
+                .allMatch(d -> d.getStatus() == OrderDetail.OrderDetailStatus.DELIVERED);
+    }
+
 
     // ===== Lifecycle callbacks =====
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (orderDate == null) {
-            orderDate = LocalDate.now();
-        }
+        if (orderDate == null) orderDate = LocalDate.now();
         validatePaymentType();
     }
 
@@ -148,25 +146,23 @@ public class Order {
         validatePaymentType();
     }
 
-    /**
-     * Validate logic trả thẳng/trả góp
-     */
+    // ===== VALIDATION =====
     private void validatePaymentType() {
         if (Boolean.FALSE.equals(isInstallment)) {
-            // Trả thẳng KHÔNG được có installment plans
             if (installmentPlans != null && !installmentPlans.isEmpty()) {
-                throw new IllegalStateException(
-                        "Đơn hàng trả thẳng không thể có kế hoạch trả góp"
-                );
+                throw new IllegalStateException("Đơn trả thẳng không thể có kế hoạch trả góp");
             }
         }
-        // Note: Không validate ngược lại vì có thể tạo order trước, thêm plans sau
     }
 
+    // ===== ENUMS =====
     public enum OrderStatus {
-        PENDING,     // Chờ xác nhận
-        CONFIRMED,   // Đã xác nhận
-        COMPLETED,   // Hoàn thành
-        CANCELLED    // Đã hủy
+        PENDING,             // Dealer tạo đơn
+        CONFIRMED,           // Hãng duyệt đơn
+        SHIPPING,            // Hãng đang giao xe
+        INSTALLMENT_ACTIVE,  // Dealer đã nhận, đang trả góp
+        PARTIALLY_DELIVERED, // Có xe lỗi, đang chờ xử lý
+        COMPLETED,           // Hoàn tất (trả góp xong hoặc trả thẳng)
+        CANCELLED            // Đã hủy
     }
 }

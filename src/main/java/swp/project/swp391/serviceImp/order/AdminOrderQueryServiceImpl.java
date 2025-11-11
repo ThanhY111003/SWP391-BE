@@ -6,9 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import swp.project.swp391.constant.ErrorHandler;
 import swp.project.swp391.entity.Order;
 import swp.project.swp391.entity.User;
+import swp.project.swp391.entity.VehicleInstance;
 import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.OrderRepository;
+import swp.project.swp391.repository.VehicleInstanceRepository;
 import swp.project.swp391.response.order.OrderResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.order.OrderQueryService;
 
@@ -21,6 +24,7 @@ import java.util.List;
 public class AdminOrderQueryServiceImpl implements OrderQueryService {
 
     private final OrderRepository orderRepo;
+    private final VehicleInstanceRepository vehicleRepo;
     private final RbacGuard guard;
 
     @Override
@@ -43,5 +47,22 @@ public class AdminOrderQueryServiceImpl implements OrderQueryService {
         return OrderResponse.fromEntity(order);
     }
 
+    // ✅ Admin xem danh sách xe trong đơn hàng
+    @Override
+    @Transactional(readOnly = true)
+    public List<VehicleInstanceResponse> getVehiclesByOrder(Long orderId, User currentUser) {
+        guard.require(guard.has(currentUser, "order.read_vehicle_EVM"));
+
+        // Kiểm tra đơn có tồn tại
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+
+        // Lấy toàn bộ danh sách xe của đơn này
+        List<VehicleInstance> vehicles = vehicleRepo.findByOrderId(orderId);
+
+        return vehicles.stream()
+                .map(VehicleInstanceResponse::fromEntity)
+                .toList();
+    }
 
 }

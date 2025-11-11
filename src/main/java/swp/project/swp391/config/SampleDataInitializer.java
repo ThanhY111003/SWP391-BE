@@ -64,10 +64,10 @@ public class SampleDataInitializer implements CommandLineRunner {
                 .levelNumber(1)
                         .
                 discountRate(new BigDecimal("10.00"))
-                .maxOrderQuantity(100)
-                .creditLimit(new BigDecimal("100000000000")) // 100 tỷ
+                .maxOrderQuantity(7)
+                .creditLimit(new BigDecimal("20000000000"))
                 .description("Đại lý cấp 1")
-                .depositRate(new BigDecimal("0.3")) //
+                .depositRate(new BigDecimal("0.2")) //
                 .maxInstallmentMonths(12)
                 .isActive(true)
                 .build();
@@ -77,8 +77,8 @@ public class SampleDataInitializer implements CommandLineRunner {
                 .levelName("Level 2")
                 .levelNumber(2)
                 .discountRate(new BigDecimal("5.00"))
-                .maxOrderQuantity(50)
-                .creditLimit(new BigDecimal("50000000000")) // 50 tỷ
+                .maxOrderQuantity(5)
+                .creditLimit(new BigDecimal("15000000000"))
                 .description("Đại lý cấp 2")
                 .depositRate(new BigDecimal("0.25")) //
                 .maxInstallmentMonths(6) //
@@ -90,10 +90,10 @@ public class SampleDataInitializer implements CommandLineRunner {
                 .levelName("Level 3")
                 .levelNumber(3)
                 .discountRate(BigDecimal.ZERO)
-                .maxOrderQuantity(20)
-                .creditLimit(new BigDecimal("20000000000")) // 20 tỷ
+                .maxOrderQuantity(3)
+                .creditLimit(new BigDecimal("10000000000"))
                 .description("Đại lý cấp 3")
-                .depositRate(new BigDecimal("0.2")) //
+                .depositRate(new BigDecimal("0.3")) //
                 .maxInstallmentMonths(3) //
                 .isActive(true)
                 .build();

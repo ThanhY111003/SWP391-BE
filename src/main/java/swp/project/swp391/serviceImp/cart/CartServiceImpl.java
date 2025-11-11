@@ -36,11 +36,9 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CartResponse addToCart(AddCartItemRequest req) {
         User user = guard.me();
-        // ✅ Ép reload dealer để đảm bảo có session và level
         Dealer dealer = dealerRepo.findById(user.getDealer().getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
 
-        // ✅ Dùng fetch join để tránh lazy khi load giỏ hàng
         Cart cart = cartRepo.findByUserIdWithAllRelations(user.getId())
                 .orElseGet(() -> cartRepo.save(Cart.builder()
                         .user(user)
@@ -51,25 +49,49 @@ public class CartServiceImpl implements CartService {
         VehicleModelColor color = colorRepo.findById(req.getVehicleModelColorId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_COLOR_NOT_FOUND));
 
-        CartItem item = cart.getItems().stream()
+        // Tính tổng số lượng hiện có trong giỏ
+        int currentTotal = cart.getItems().stream()
+                .mapToInt(CartItem::getQuantity)
+                .sum();
+
+        // Số lượng mới muốn thêm
+        int addedQuantity = req.getQuantity();
+
+        // Nếu sản phẩm đã tồn tại trong giỏ, thay đổi total cho chính xác
+        CartItem existingItem = cart.getItems().stream()
                 .filter(i -> i.getVehicleModelColor().getId().equals(req.getVehicleModelColorId()))
                 .findFirst()
                 .orElse(null);
 
-        if (item == null) {
-            item = CartItem.builder()
+        int newTotal = currentTotal + addedQuantity;
+        if (existingItem != null) {
+            // Vì nó đã có sẵn, không cộng 2 lần
+            newTotal = currentTotal - existingItem.getQuantity() + (existingItem.getQuantity() + addedQuantity);
+        }
+
+        Integer maxLimit = dealer.getLevel().getMaxOrderQuantity();
+        if (maxLimit != null && newTotal > maxLimit) {
+            throw new BaseException(ErrorHandler.MAX_ORDER_QUANTITY_EXCEEDED,
+                    String.format("Tổng số lượng trong giỏ (%d) vượt giới hạn %d theo cấp độ đại lý %s.",
+                            newTotal, maxLimit, dealer.getLevel().getLevelName()));
+        }
+
+        // Cập nhật item
+        if (existingItem == null) {
+            existingItem = CartItem.builder()
                     .cart(cart)
                     .vehicleModelColor(color)
-                    .quantity(req.getQuantity())
+                    .quantity(addedQuantity)
                     .build();
-            cart.getItems().add(item);
+            cart.getItems().add(existingItem);
         } else {
-            item.setQuantity(item.getQuantity() + req.getQuantity());
+            existingItem.setQuantity(existingItem.getQuantity() + addedQuantity);
         }
 
         cartRepo.save(cart);
         return buildCartResponse(cart, dealer);
     }
+
 
     // ===========================================================
     // ✅ 2. Update item quantity (+ hoặc - giống Shopee)
@@ -78,7 +100,6 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public CartResponse updateItemQuantity(Long itemId, int newQuantity) {
         User user = guard.me();
-
         CartItem item = itemRepo.findById(itemId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.CART_ITEM_NOT_FOUND));
 
@@ -90,6 +111,24 @@ public class CartServiceImpl implements CartService {
             throw new BaseException(ErrorHandler.INVALID_REQUEST, "Số lượng không hợp lệ (phải ≥ 0).");
         }
 
+        Dealer dealer = dealerRepo.findById(user.getDealer().getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
+
+        Cart cart = cartRepo.findByUserIdWithAllRelations(user.getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.CART_NOT_FOUND));
+
+        // ✅ Tính tổng sau khi cập nhật
+        int totalAfterUpdate = cart.getItems().stream()
+                .mapToInt(i -> i.getId().equals(itemId) ? newQuantity : i.getQuantity())
+                .sum();
+
+        Integer maxLimit = dealer.getLevel().getMaxOrderQuantity();
+        if (maxLimit != null && totalAfterUpdate > maxLimit) {
+            throw new BaseException(ErrorHandler.MAX_ORDER_QUANTITY_EXCEEDED,
+                    String.format("Tổng số lượng trong giỏ (%d) vượt giới hạn %d theo cấp độ đại lý %s.",
+                            totalAfterUpdate, maxLimit, dealer.getLevel().getLevelName()));
+        }
+
         if (newQuantity == 0) {
             itemRepo.delete(item);
         } else {
@@ -97,16 +136,9 @@ public class CartServiceImpl implements CartService {
             itemRepo.save(item);
         }
 
-        // ✅ refetch dealer để đảm bảo có session
-        Dealer dealer = dealerRepo.findById(user.getDealer().getId())
-                .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
-
-        // ✅ fetch cart đầy đủ quan hệ
-        Cart cart = cartRepo.findByUserIdWithAllRelations(user.getId())
-                .orElseThrow(() -> new BaseException(ErrorHandler.CART_NOT_FOUND));
-
         return buildCartResponse(cart, dealer);
     }
+
 
 
     // ===========================================================

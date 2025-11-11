@@ -57,6 +57,11 @@ public class VehicleInstance {
     @JoinColumn(name = "current_dealer_id")
     private Dealer currentDealer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
+
+
     @OneToOne(mappedBy = "vehicleInstance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private CustomerVehicle customerVehicle;
 
@@ -74,6 +79,8 @@ public class VehicleInstance {
     public enum VehicleStatus {
         IN_STOCK,
         RESERVED,
+        REPAIRING,
+        SHIPPING,
         SOLD
     }
 }
