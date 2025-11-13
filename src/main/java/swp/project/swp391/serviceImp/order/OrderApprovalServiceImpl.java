@@ -87,7 +87,7 @@ public class OrderApprovalServiceImpl implements OrderApprovalService {
                         .manufacturingDate(LocalDate.now())
                         .status(VehicleInstance.VehicleStatus.SHIPPING) // ✅ Xe đã được tạo, chờ giao
                         .isActive(true)
-                        .currentDealer(null)
+                        .currentDealer(order.getBuyerDealer())
                         .currentValue(detail.getUnitPrice())
                         .order(order) // ✅ Liên kết với đơn hàng
                         .build();
