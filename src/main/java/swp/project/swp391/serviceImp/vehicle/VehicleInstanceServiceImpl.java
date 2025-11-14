@@ -112,12 +112,9 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
         if (customerVehicleRepo.findByVehicleInstance(vehicle).isPresent())
             throw new BaseException(ErrorHandler.VEHICLE_ALREADY_ASSIGNED);
 
-        User seller = current; // ✅ lấy từ token
-
-        // ✅ Ngày bán tự động = hôm nay
+        User seller = current;
         LocalDate saleDate = LocalDate.now();
 
-        // ✅ Bảo hành: mặc định bắt đầu từ ngày bán
         LocalDate warrantyStart = req.getWarrantyStartDate() != null ? req.getWarrantyStartDate() : saleDate;
         LocalDate warrantyEnd = req.getWarrantyEndDate();
 
@@ -125,11 +122,19 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
             throw new BaseException(ErrorHandler.INVALID_WARRANTY_PERIOD);
         }
 
-        BigDecimal salePrice = req.getSalePrice() != null
-                ? req.getSalePrice()
-                : (vehicle.getCurrentValue() != null
+        BigDecimal baseValue = vehicle.getCurrentValue() != null
                 ? vehicle.getCurrentValue()
-                : vehicle.getVehicleModel().getManufacturerPrice());
+                : vehicle.getVehicleModel().getManufacturerPrice();
+
+        BigDecimal salePrice = req.getSalePrice() != null ? req.getSalePrice() : baseValue;
+
+        // ✅ Kiểm tra điều kiện salePrice nằm trong khoảng [currentValue, currentValue * 1.2]
+        if (baseValue != null) {
+            BigDecimal maxAllowed = baseValue.multiply(BigDecimal.valueOf(1.2));
+            if (salePrice.compareTo(baseValue) < 0 || salePrice.compareTo(maxAllowed) > 0) {
+                throw new BaseException(ErrorHandler.INVALID_SALE_PRICE_RANGE);
+            }
+        }
 
         CustomerVehicle record = CustomerVehicle.builder()
                 .vehicleInstance(vehicle)
@@ -137,7 +142,7 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
                 .soldByDealer(vehicle.getCurrentDealer())
                 .soldByUser(seller)
                 .salePrice(salePrice)
-                .saleDate(saleDate) // ✅ tự động set hôm nay
+                .saleDate(saleDate)
                 .customerWarrantyStartDate(warrantyStart)
                 .customerWarrantyEndDate(warrantyEnd)
                 .build();
@@ -146,7 +151,6 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
 
         vehicle.setStatus(VehicleInstance.VehicleStatus.SOLD);
 
-        // ✅ Giảm tồn kho khi bán
         Inventory inv = inventoryRepo.findByDealerIdAndVehicleModelColorId(
                 vehicle.getCurrentDealer().getId(),
                 vehicle.getVehicleModelColor().getId()
@@ -163,6 +167,7 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
 
         return CustomerVehicleResponse.fromEntity(record);
     }
+
 
 
     // --------------------------------------------------------

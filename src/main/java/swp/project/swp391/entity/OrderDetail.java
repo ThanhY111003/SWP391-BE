@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class OrderDetail {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,6 +27,21 @@ public class OrderDetail {
     @Column(name = "total_price", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalPrice;
 
+    /**
+     * Trạng thái chi tiết đơn hàng
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private OrderDetailStatus status = OrderDetailStatus.PENDING;
+
+    /**
+     * Ghi chú xử lý (khi xe lỗi hoặc đổi xe)
+     */
+    @Column(name = "resolution_note", columnDefinition = "NVARCHAR(MAX)")
+    private String resolutionNote;
+
+    // ===== Relationships =====
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
@@ -38,11 +54,21 @@ public class OrderDetail {
     @JoinColumn(name = "vehicle_model_color_id", nullable = false)
     private VehicleModelColor vehicleModelColor;
 
+    // ====== Lifecycle ======
     @PrePersist
     @PreUpdate
     protected void calculateTotalPrice() {
         if (quantity != null && unitPrice != null) {
             this.totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
         }
+    }
+
+    // ====== ENUM ======
+    public enum OrderDetailStatus {
+        PENDING,     // Chờ xử lý (vừa tạo)
+        CONFIRMED,    // Hãng đã duyệt
+        SHIPPING,    // Đang vận chuyển
+        DELIVERED,   // Đã giao thành công
+        CANCELLED    // Bị hủy riêng chi tiết
     }
 }

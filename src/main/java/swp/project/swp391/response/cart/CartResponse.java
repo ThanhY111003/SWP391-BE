@@ -3,6 +3,7 @@ package swp.project.swp391.response.cart;
 import lombok.*;
 import swp.project.swp391.entity.Cart;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,6 +17,7 @@ public class CartResponse {
     private String dealerName;
     private String userFullName;
     private List<Item> items;
+    private BigDecimal cartTotal; // ✅ tổng giá trị giỏ hàng
 
     @Getter
     @Setter
@@ -23,25 +25,22 @@ public class CartResponse {
     @AllArgsConstructor
     @Builder
     public static class Item {
-        private Long id;
+        private Long id;        
+        private Long vehicleModelColorId;
         private String modelName;
         private String colorName;
         private Integer quantity;
+        private BigDecimal unitPrice;  // ✅ giá 1 xe
+        private BigDecimal totalPrice; // ✅ giá * số lượng
     }
 
-    public static CartResponse fromEntity(Cart entity) {
+    public static CartResponse fromEntity(Cart entity, BigDecimal cartTotal, List<Item> items) {
         return CartResponse.builder()
                 .id(entity.getId())
                 .dealerName(entity.getDealer().getName())
                 .userFullName(entity.getUser().getFullName())
-                .items(entity.getItems().stream().map(i ->
-                        Item.builder()
-                                .id(i.getId())
-                                .modelName(i.getVehicleModelColor().getVehicleModel().getName())
-                                .colorName(i.getVehicleModelColor().getColor().getColorName())
-                                .quantity(i.getQuantity())
-                                .build()
-                ).collect(Collectors.toList()))
+                .items(items)
+                .cartTotal(cartTotal)
                 .build();
     }
 }

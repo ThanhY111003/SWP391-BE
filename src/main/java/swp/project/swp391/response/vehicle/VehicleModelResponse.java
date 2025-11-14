@@ -24,4 +24,5 @@ public class VehicleModelResponse {
     private BigDecimal manufacturerPrice;
     private String imageUrl;
     private Boolean isActive;
+    private String Description;
 }

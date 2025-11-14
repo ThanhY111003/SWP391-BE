@@ -187,6 +187,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setMustChangePassword(true);
         userRepository.save(user);
 
         tokenRepository.delete(token);

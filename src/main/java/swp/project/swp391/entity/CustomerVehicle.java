@@ -32,7 +32,7 @@ public class CustomerVehicle {
     @Column(name = "customer_warranty_end_date")
     private LocalDate customerWarrantyEndDate;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String notes;
 
     @Column(name = "created_at")

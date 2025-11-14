@@ -29,9 +29,9 @@ public class EditDealerLevelRequest {
     private BigDecimal creditLimit;        // Hạn mức tín dụng (có thể sửa)
 
     @NotNull(message = "Số tháng trả góp tối đa không được để trống.")
-    @Min(value = 1, message = "Số tháng trả góp tối đa phải lớn hơn hoặc bằng 1.")
-    @Max(value = 36, message = "Số tháng trả góp tối đa không thể vượt quá 36 tháng.")
-    private Integer maxInstallmentMonths;  // Số tháng trả góp tối đa cho cấp độ (có thể sửa)
+    @Min(value = 0, message = "Số tháng trả góp tối đa phải >= 0.")
+    @Max(value = 12, message = "Số tháng trả góp tối đa không thể vượt quá 12 tháng.")
+    private Integer maxInstallmentMonths;  // Số tháng trả góp tối đa cho cấp độ
 
     @Size(max = 500, message = "Mô tả không được vượt quá 500 ký tự.")
     private String description;            // Mô tả (có thể sửa)

@@ -87,6 +87,8 @@ public class OrderResponse {
         private Integer quantity;
         private BigDecimal unitPrice;
         private BigDecimal totalPrice;
+        private String status;
+        private String resolutionNote;
     }
 
     @Getter
@@ -151,6 +153,8 @@ public class OrderResponse {
                                         .quantity(detail.getQuantity())
                                         .unitPrice(detail.getUnitPrice())
                                         .totalPrice(detail.getTotalPrice())
+                                        .status(detail.getStatus().name())
+                                        .resolutionNote(detail.getResolutionNote())
                                         .build())
                                 .collect(Collectors.toList()) : null)
 

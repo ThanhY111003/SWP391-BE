@@ -11,6 +11,7 @@ import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.entity.User;
 import swp.project.swp391.request.order.CreateOrderRequest;
 import swp.project.swp391.response.order.OrderResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.order.OrderQueryService;
 import swp.project.swp391.service.order.OrderService;
@@ -51,4 +52,30 @@ public class DealerOrderController {
         OrderResponse res = dealerOrderQueryService.getOrderById(orderId, me);
         return ResponseEntity.ok(ApiResponse.ok(res, "Lấy chi tiết đơn hàng thành công"));
     }
+
+    @DeleteMapping("/{orderId}/cancel")
+    @Operation(summary = "Huỷ đơn hàng (Dealer)", description = "Chỉ huỷ được đơn đang ở trạng thái PENDING.")
+    public ResponseEntity<ApiResponse<Void>> cancelOrder(@PathVariable Long orderId) {
+        orderService.cancelOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Huỷ đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Lấy danh sách xe trong đơn hàng", description = "Trả về danh sách các xe (VehicleInstance) thuộc đơn hàng của Dealer hiện tại")
+    @GetMapping("/{orderId}/vehicles")
+    public ResponseEntity<ApiResponse<List<VehicleInstanceResponse>>> getVehiclesByOrder(
+            @PathVariable Long orderId
+    ) {
+        User me = guard.me();
+        List<VehicleInstanceResponse> vehicles = dealerOrderQueryService.getVehiclesByOrder(orderId, me);
+        return ResponseEntity.ok(ApiResponse.ok(vehicles, "Lấy danh sách xe trong đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Dealer xác nhận đã nhận xe", description = "Dealer xác nhận đơn hàng SHIPPING, xe đạt chuẩn và thêm vào kho.")
+    @PatchMapping("/{orderId}/confirm-received")
+    public ResponseEntity<ApiResponse<OrderResponse>> dealerConfirmReceived(@PathVariable Long orderId) {
+        User me = guard.me();
+        OrderResponse res = orderService.dealerConfirmReceived(orderId, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Dealer xác nhận đã nhận xe thành công"));
+    }
+
 }

@@ -6,9 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import swp.project.swp391.constant.ErrorHandler;
 import swp.project.swp391.entity.Order;
 import swp.project.swp391.entity.User;
+import swp.project.swp391.entity.VehicleInstance;
 import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.OrderRepository;
+import swp.project.swp391.repository.VehicleInstanceRepository;
 import swp.project.swp391.response.order.OrderResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.order.OrderQueryService;
 
@@ -21,6 +24,7 @@ import java.util.List;
 public class DealerOrderQueryServiceImpl implements OrderQueryService {
 
     private final OrderRepository orderRepo;
+    private final VehicleInstanceRepository vehicleRepo;
     private final RbacGuard guard;
 
     @Override
@@ -53,5 +57,28 @@ public class DealerOrderQueryServiceImpl implements OrderQueryService {
         return OrderResponse.fromEntity(order);
     }
 
+    // ✅ Thêm hàm mới để dealer xem danh sách xe của đơn
+    @Override
+    @Transactional(readOnly = true)
+    public List<VehicleInstanceResponse> getVehiclesByOrder(Long orderId, User currentUser) {
+        guard.require(guard.has(currentUser, "order.read_vehicle"));
+
+        if (currentUser.getDealer() == null) {
+            throw new BaseException(ErrorHandler.DEALER_NOT_FOUND);
+        }
+
+        Long dealerId = currentUser.getDealer().getId();
+
+        // Kiểm tra quyền xem đơn hàng
+        Order order = orderRepo.findOneByIdAndBuyerDealerId(orderId, dealerId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+
+        // Lấy danh sách xe thuộc đơn đó
+        List<VehicleInstance> vehicles = vehicleRepo.findByOrderId(orderId);
+
+        return vehicles.stream()
+                .map(VehicleInstanceResponse::fromEntity)
+                .toList();
+    }
 
 }

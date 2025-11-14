@@ -27,7 +27,7 @@ Role {
     @Column(name = "display_name")
     private String displayName;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Column(name = "is_active")
