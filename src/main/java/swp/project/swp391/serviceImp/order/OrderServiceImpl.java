@@ -201,6 +201,8 @@ public class OrderServiceImpl implements OrderService {
             OrderDetail detail = OrderDetail.builder()
                     .vehicleModel(vehicleModel)
                     .vehicleModelColor(vehicleModelColor)
+                    .vehicleModelNameSnapshot(vehicleModel.getName())
+                    .vehicleColorNameSnapshot(vehicleModelColor.getColor().getColorName())
                     .quantity(detailReq.getQuantity())
                     .unitPrice(unitPrice)
                     .totalPrice(detailTotal)

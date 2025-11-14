@@ -54,6 +54,12 @@ public class OrderDetail {
     @JoinColumn(name = "vehicle_model_color_id", nullable = false)
     private VehicleModelColor vehicleModelColor;
 
+    @Column(name = "vehicle_model_name_snapshot", nullable = false)
+    private String vehicleModelNameSnapshot;  // ✅ VD: "VF 10"
+
+    @Column(name = "vehicle_color_name_snapshot", nullable = false)
+    private String vehicleColorNameSnapshot;
+
     // ====== Lifecycle ======
     @PrePersist
     @PreUpdate
