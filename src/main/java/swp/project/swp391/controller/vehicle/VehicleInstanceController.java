@@ -13,6 +13,8 @@ import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.entity.VehicleInstance;
 import swp.project.swp391.request.vehicle.AssignVehicleRequest;
 import swp.project.swp391.request.vehicle.TransferVehicleRequest;
+import swp.project.swp391.request.vehicle.VehicleInstanceCreateRequest;
+import swp.project.swp391.request.vehicle.VehicleInstanceUpdateRequest;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
@@ -94,5 +96,23 @@ public class VehicleInstanceController {
         return ResponseEntity.ok(ApiResponse.ok(response, "Chuyển xe giữa đại lý thành công"));
     }
 
+    @Operation(summary = "Tạo xe mới nhập từ nhà máy")
+    @PostMapping
+    public ResponseEntity<ApiResponse<VehicleInstanceResponse>> create(
+            @Valid @RequestBody VehicleInstanceCreateRequest req
+    ) {
+        var created = service.create(req);
+        return ResponseEntity.ok(ApiResponse.ok(created, "Tạo xe thành công"));
+    }
+
+    @Operation(summary = "Cập nhật VIN, số máy, ngày sản xuất, màu/model")
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<VehicleInstanceResponse>> update(
+            @PathVariable Long id,
+            @Valid @RequestBody VehicleInstanceUpdateRequest req
+    ) {
+        var updated = service.update(id, req);
+        return ResponseEntity.ok(ApiResponse.ok(updated, "Cập nhật xe thành công"));
+    }
 
 }

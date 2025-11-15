@@ -95,6 +95,8 @@ public class DataInitializer implements CommandLineRunner {
                 {"vehicle", "active", "Kích hoạt xe", "Kích hoạt lại xe"},
                 {"vehicle", "assign_customer", "Gán xe cho khách hàng", "Gán xe cho khách hàng"},
                 {"vehicle", "transfer", "Chuyển xe giữa các đại lý", "Chuyển xe giữa các đại lý"},
+                {"vehicle", "create", "Tạo xe", "Thêm xe mới"},
+                {"vehicle", "update", "Cập nhật xe", "Cập nhật thông tin xe"},
 
                 // Vehicle Model Color
                 {"vehicleModelColor", "create", "Gán màu xe", "Gán màu cho mẫu xe"},
@@ -137,6 +139,10 @@ public class DataInitializer implements CommandLineRunner {
                 {"defect", "read", "Xem báo cáo xe lỗi", "Xem danh sách báo cáo xe lỗi"},
                 {"defect", "repair_complete", "Xác nhận sửa xong xe lỗi", "Xác nhận đã sửa xong xe lỗi"},
                 {"vehicle", "receive_repair", "Xác nhận nhận lại xe sau sửa chữa", "Xác nhận nhận lại xe sau khi sửa chữa xong"},
+                {"order", "attach_vehicle", "gắn xe cho đơn hàng", "gắn xe cụ thể cho đơn hàng"},
+                {"order", "manual_pay", "Nhập thanh toán trả thẳng", "Nhập số tiền dealer đã thanh toán cho đơn trả thẳng"},
+                {"order", "deposit_confirm", "Xác nhận tiền cọc", "Xác nhận đã nhận tiền cọc từ dealer"},
+
                 // Dealer
                 {"dealer", "create", "Tạo đại lý", "Thêm đại lý mới"},
                 {"dealer", "read", "Xem đại lý", "Xem thông tin đại lý"},

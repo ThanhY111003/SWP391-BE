@@ -24,40 +24,48 @@ public class DealerDefectiveVehicleController {
     private final DefectiveVehicleService defectiveVehicleService;
     private final RbacGuard guard;
 
+    // ======================= BÁO LỖI XE (1 order = 1 vehicle) =======================
     @Operation(
             summary = "Báo cáo xe lỗi",
-            description = "Dealer gửi báo cáo xe lỗi cho hãng trong đơn hàng đang giao (xe chưa về kho)"
+            description = "Dealer báo lỗi cho chiếc xe trong đơn hàng đang giao"
     )
-    @PostMapping("/orders/{orderId}/vehicles/{vehicleId}/report")
+    @PostMapping("/orders/{orderId}/report")
     public ResponseEntity<ApiResponse<DefectiveVehicleReportResponse>> createReport(
             @PathVariable Long orderId,
-            @PathVariable Long vehicleId,
             @RequestParam String reason
     ) {
         User me = guard.me();
-        DefectiveVehicleReportResponse report = defectiveVehicleService.createReport(orderId, vehicleId, reason, me);
+        DefectiveVehicleReportResponse report =
+                defectiveVehicleService.createReport(orderId, reason, me);
+
         return ResponseEntity.ok(ApiResponse.ok(report, "Báo cáo xe lỗi thành công"));
     }
 
-
-    @Operation(summary = "Xem danh sách báo cáo xe lỗi của đơn hàng", description = "Dealer xem các xe bị lỗi trong đơn hàng của mình")
-    @GetMapping("/order/{orderId}")
-    public ResponseEntity<ApiResponse<List<DefectiveVehicleReportResponse>>> getReportsByOrder(@PathVariable Long orderId) {
-        User me = guard.me();
-        List<DefectiveVehicleReportResponse> reports = defectiveVehicleService.getReportsByOrder(orderId, me);
-        return ResponseEntity.ok(ApiResponse.ok(reports, "Lấy danh sách báo cáo xe lỗi thành công"));
-    }
-
-    @PatchMapping("/orders/{orderId}/vehicles/{vehicleId}/confirm-repaired")
-    @Operation(summary = "Xác nhận xe đã được sửa xong", description = "Dealer xác nhận đã nhận lại xe sửa xong từ hãng")
-    public ResponseEntity<ApiResponse<RepairedVehicleResponse>> confirmRepairedVehicle(
-            @PathVariable Long orderId,
-            @PathVariable Long vehicleId
+    // ======================= XEM DANH SÁCH BÁO LỖI =======================
+    @Operation(summary = "Xem danh sách báo cáo xe lỗi của đơn hàng")
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<ApiResponse<List<DefectiveVehicleReportResponse>>> getReportsByOrder(
+            @PathVariable Long orderId
     ) {
         User me = guard.me();
-        RepairedVehicleResponse response = defectiveVehicleService.confirmRepairedVehicle(orderId, vehicleId, me);
-        return ResponseEntity.ok(ApiResponse.ok(response, "Xác nhận xe đã được sửa xong thành công"));
+        List<DefectiveVehicleReportResponse> reports =
+                defectiveVehicleService.getReportsByOrder(orderId, me);
+
+        return ResponseEntity.ok(ApiResponse.ok(reports, "Lấy danh sách báo cáo thành công"));
     }
 
+    // ======================= XÁC NHẬN XE ĐÃ SỬA XONG =======================
+    @PatchMapping("/orders/{orderId}/confirm-repaired")
+    @Operation(summary = "Xác nhận xe sửa xong",
+            description = "Dealer xác nhận đã nhận lại xe sửa xong từ hãng")
+    public ResponseEntity<ApiResponse<RepairedVehicleResponse>> confirmRepairedVehicle(
+            @PathVariable Long orderId
+    ) {
+        User me = guard.me();
+        RepairedVehicleResponse response =
+                defectiveVehicleService.confirmRepairedVehicle(orderId, me);
 
+        return ResponseEntity.ok(ApiResponse.ok(response, "Xác nhận xe đã sửa xong thành công"));
+    }
 }
+

@@ -9,6 +9,8 @@ import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.*;
 import swp.project.swp391.request.vehicle.AssignVehicleRequest;
 import swp.project.swp391.request.vehicle.TransferVehicleRequest;
+import swp.project.swp391.request.vehicle.VehicleInstanceCreateRequest;
+import swp.project.swp391.request.vehicle.VehicleInstanceUpdateRequest;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
@@ -25,6 +27,7 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
 
     private final VehicleInstanceRepository vehicleRepo;
     private final CustomerRepository customerRepo;
+    private final VehicleModelColorRepository vehicleModelColorRepo;
     private final CustomerVehicleRepository customerVehicleRepo;
     private final InventoryRepository inventoryRepo;
     private final RbacGuard guard;
@@ -69,6 +72,89 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
                 .map(VehicleInstanceResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional
+    public VehicleInstanceResponse create(VehicleInstanceCreateRequest req) {
+        guard.require(guard.has(guard.me(), "vehicle.create"));
+
+        // --- AUTO-UPPERCASE ---
+        String vin = req.getVin().trim().toUpperCase();
+        String engine = req.getEngineNumber().trim().toUpperCase();
+
+        // --- CHECK UNIQUE ---
+        if (vehicleRepo.existsByVin(vin)) {
+            throw new BaseException(ErrorHandler.VIN_ALREADY_EXISTS);
+        }
+
+        if (vehicleRepo.existsByEngineNumber(engine)) {
+            throw new BaseException(ErrorHandler.ENGINE_NUMBER_ALREADY_EXISTS);
+        }
+
+        VehicleModelColor color = vehicleModelColorRepo.findById(req.getVehicleModelColorId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_COLOR_NOT_FOUND));
+
+        VehicleModel model = color.getVehicleModel();
+        BigDecimal initialPrice = model.getManufacturerPrice()
+                .add(color.getPriceAdjustment() != null ? color.getPriceAdjustment() : BigDecimal.ZERO);
+
+        VehicleInstance v = VehicleInstance.builder()
+                .vin(vin)                  // dùng VIN uppercase
+                .engineNumber(engine)      // dùng engine uppercase
+                .manufacturingDate(req.getManufacturingDate())
+                .vehicleModel(model)
+                .vehicleModelColor(color)
+                .status(VehicleInstance.VehicleStatus.AVAILABLE)
+                .isActive(true)
+                .currentDealer(null)
+                .currentValue(initialPrice)
+                .build();
+
+        vehicleRepo.save(v);
+        return VehicleInstanceResponse.fromEntity(v);
+    }
+
+
+    @Override
+    @Transactional
+    public VehicleInstanceResponse update(Long id, VehicleInstanceUpdateRequest req) {
+        guard.require(guard.has(guard.me(), "vehicle.update"));
+
+        VehicleInstance v = vehicleRepo.findById(id)
+                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
+
+        // Nếu đã gắn vào order → cấm sửa
+        if (v.getOrder() != null) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Không thể sửa xe đã gắn vào đơn hàng.");
+        }
+
+        // VIN unique
+        if (!v.getVin().equals(req.getVin()) && vehicleRepo.existsByVin(req.getVin())) {
+            throw new BaseException(ErrorHandler.VIN_ALREADY_EXISTS);
+        }
+
+        if (!v.getEngineNumber().equals(req.getEngineNumber())
+                && vehicleRepo.existsByEngineNumber(req.getEngineNumber())) {
+            throw new BaseException(ErrorHandler.ENGINE_NUMBER_ALREADY_EXISTS);
+        }
+
+        v.setVin(req.getVin());
+        v.setEngineNumber(req.getEngineNumber());
+        v.setManufacturingDate(req.getManufacturingDate());
+
+        if (req.getVehicleModelColorId() != null) {
+            VehicleModelColor color = vehicleModelColorRepo.findById(req.getVehicleModelColorId())
+                    .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_MODEL_COLOR_NOT_FOUND));
+            v.setVehicleModelColor(color);
+            v.setVehicleModel(color.getVehicleModel());
+        }
+
+        vehicleRepo.save(v);
+
+        return VehicleInstanceResponse.fromEntity(v);
+    }
+
 
     // --------------------------------------------------------
     // GET BY ID

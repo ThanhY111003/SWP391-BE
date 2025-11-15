@@ -6,6 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "vehicle_instances")
@@ -57,8 +58,7 @@ public class VehicleInstance {
     @JoinColumn(name = "current_dealer_id")
     private Dealer currentDealer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
+    @OneToOne(mappedBy = "assignedVehicle", fetch = FetchType.LAZY)
     private Order order;
 
 
@@ -77,6 +77,7 @@ public class VehicleInstance {
     }
 
     public enum VehicleStatus {
+        AVAILABLE,
         IN_STOCK,
         RESERVED,
         REPAIRING,

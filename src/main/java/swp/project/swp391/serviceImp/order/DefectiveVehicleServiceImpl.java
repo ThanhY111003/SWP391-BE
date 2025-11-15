@@ -28,24 +28,26 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
     private final OrderRepository orderRepo;
     private final RbacGuard guard;
 
-    public DefectiveVehicleReportResponse createReport(Long orderId, Long vehicleId, String reason, User reporter) {
+    public DefectiveVehicleReportResponse createReport(Long orderId, String reason, User reporter) {
+
         guard.require(guard.has(reporter, "vehicle.report_defect"));
 
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
+        // Kiểm tra quyền
         if (!Objects.equals(order.getBuyerDealer().getId(), reporter.getDealer().getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN, "Đơn hàng không thuộc đại lý của bạn");
         }
 
-        VehicleInstance vehicle = vehicleRepo.findById(vehicleId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
-
-        if (!Objects.equals(vehicle.getOrder().getId(), orderId)) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Xe không thuộc đơn hàng này");
+        // Lấy xe duy nhất trong đơn
+        VehicleInstance vehicle = order.getAssignedVehicle();
+        if (vehicle == null) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Đơn hàng chưa được gắn xe");
         }
 
-        if (reportRepo.existsByVehicleInstanceId(vehicleId)) {
+        // Kiểm tra duplicate report
+        if (reportRepo.existsByVehicleInstanceId(vehicle.getId())) {
             throw new BaseException(ErrorHandler.VEHICLE_INSTANCE_DUPLICATE, "Xe này đã được báo lỗi trước đó");
         }
 
@@ -91,6 +93,10 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
 
         VehicleInstance vehicle = report.getVehicleInstance();
         Order order = vehicle.getOrder();
+        if (order == null) {
+            throw new BaseException(ErrorHandler.ORDER_NOT_FOUND);
+        }
+
 
         report.setIsApproved(true);
         report.setReportedAt(LocalDateTime.now());
@@ -138,7 +144,8 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
 
     @Override
     @Transactional
-    public RepairedVehicleResponse confirmRepairedVehicle(Long orderId, Long vehicleId, User dealerUser) {
+    public RepairedVehicleResponse confirmRepairedVehicle(Long orderId, User dealerUser) {
+
         guard.require(guard.has(dealerUser, "vehicle.receive_repair"));
 
         Dealer dealer = dealerRepo.findById(dealerUser.getDealer().getId())
@@ -148,14 +155,13 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
                 .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
         if (!Objects.equals(order.getBuyerDealer().getId(), dealer.getId())) {
-            throw new BaseException(ErrorHandler.FORBIDDEN, "Đơn hàng không thuộc dealer hiện tại");
+            throw new BaseException(ErrorHandler.FORBIDDEN, "Đơn báo lỗi hàng không thuộc dealer hiện tại");
         }
 
-        VehicleInstance vehicle = vehicleRepo.findWithRelationsById(vehicleId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
-
-        if (!Objects.equals(vehicle.getOrder().getId(), orderId)) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Xe không thuộc đơn hàng này");
+        // 🔥 LẤY XE TỪ ORDER — KHÔNG CẦN vehicleId
+        VehicleInstance vehicle = order.getAssignedVehicle();
+        if (vehicle == null) {
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED, "Đơn hàng chưa có xe gắn vào");
         }
 
         if (vehicle.getStatus() != VehicleInstance.VehicleStatus.SHIPPING) {
@@ -163,50 +169,47 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
                     "Xe phải ở trạng thái SHIPPING mới có thể xác nhận nhận lại");
         }
 
-        // ✅ Kiểm tra xe đã được nhập kho chưa (tránh nhập 2 lần)
+        // Tránh nhận 2 lần
         if (vehicle.getCurrentDealer() != null &&
-                vehicle.getCurrentDealer().getId().equals(dealer.getId())) {
+                Objects.equals(vehicle.getCurrentDealer().getId(), dealer.getId())) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
                     "Xe này đã được nhập kho trước đó");
         }
 
-        // ✅ Cập nhật xe
+        // Cập nhật xe
         vehicle.setStatus(VehicleInstance.VehicleStatus.IN_STOCK);
         vehicle.setCurrentDealer(dealer);
         vehicleRepo.save(vehicle);
 
-        // ✅ Cập nhật inventory
+        // Cập nhật inventory
         Inventory inv = inventoryRepo.lockByDealerIdAndVehicleModelColorId(
-                dealer.getId(), vehicle.getVehicleModelColor().getId()
-        ).orElseThrow(() -> new BaseException(ErrorHandler.INVENTORY_NOT_FOUND));
-
-        log.info("📦 Trước khi cập nhật inventory: total={}, available={}",
-                inv.getTotalQuantity(), inv.getAvailableQuantity());
+                dealer.getId(),
+                vehicle.getVehicleModelColor().getId()
+        ).orElseGet(() -> inventoryRepo.save(
+                Inventory.builder()
+                        .dealer(dealer)
+                        .vehicleModelColor(vehicle.getVehicleModelColor())
+                        .availableQuantity(0)
+                        .reservedQuantity(0)
+                        .totalQuantity(0)
+                        .isActive(true)
+                        .build()
+        ));
 
         inv.setAvailableQuantity(inv.getAvailableQuantity() + 1);
         inv.setTotalQuantity(inv.getTotalQuantity() + 1);
         inventoryRepo.save(inv);
 
-        log.info("📦 Sau khi cập nhật inventory: total={}, available={}",
-                inv.getTotalQuantity(), inv.getAvailableQuantity());
-
-        // ✅ Kiểm tra tất cả xe trong đơn
-        boolean hasDefectiveVehicles = vehicleRepo.existsByOrderIdAndStatusIn(
-                order.getId(),
-                List.of(
-                        VehicleInstance.VehicleStatus.REPAIRING,
-                        VehicleInstance.VehicleStatus.SHIPPING
-                )
-        );
-
-        if (!hasDefectiveVehicles) {
-            order.setStatus(Boolean.TRUE.equals(order.getIsInstallment())
-                    ? Order.OrderStatus.INSTALLMENT_ACTIVE
-                    : Order.OrderStatus.COMPLETED);
-            order.setUpdatedAt(LocalDateTime.now());
-            orderRepo.save(order);
+        // Cập nhật trạng thái đơn
+        if (Boolean.TRUE.equals(order.getIsInstallment())) {
+            order.setStatus(Order.OrderStatus.INSTALLMENT_ACTIVE);
+        } else {
+            order.setStatus(Order.OrderStatus.COMPLETED);
         }
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepo.save(order);
 
         return RepairedVehicleResponse.fromEntity(vehicle);
     }
+
 }

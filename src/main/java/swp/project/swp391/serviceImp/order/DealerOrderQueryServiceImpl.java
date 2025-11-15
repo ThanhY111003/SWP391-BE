@@ -69,16 +69,18 @@ public class DealerOrderQueryServiceImpl implements OrderQueryService {
 
         Long dealerId = currentUser.getDealer().getId();
 
-        // Kiểm tra quyền xem đơn hàng
+        // Kiểm tra dealer có quyền xem đơn này
         Order order = orderRepo.findOneByIdAndBuyerDealerId(orderId, dealerId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        // Lấy danh sách xe thuộc đơn đó
-        List<VehicleInstance> vehicles = vehicleRepo.findByOrderId(orderId);
+        // Lấy xe duy nhất của đơn
+        VehicleInstance vehicle = order.getAssignedVehicle();
 
-        return vehicles.stream()
-                .map(VehicleInstanceResponse::fromEntity)
-                .toList();
+        if (vehicle == null) {
+            // Đơn chưa gán xe → trả list rỗng
+            return List.of();
+        }
+
+        return List.of(VehicleInstanceResponse.fromEntity(vehicle));
     }
-
 }

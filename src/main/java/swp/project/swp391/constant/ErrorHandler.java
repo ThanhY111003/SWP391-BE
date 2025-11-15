@@ -77,6 +77,8 @@ public enum ErrorHandler {
     VEHICLE_NOT_OWNED_BY_DEALER(HttpStatus.FORBIDDEN, 403, "Xe không thuộc sở hữu của đại lý hiện tại"),
     INVALID_WARRANTY_PERIOD(HttpStatus.BAD_REQUEST, 400, "Ngày kết thức phải lớn hơn ngày bắt đầu bảo hành"),
     VEHICLE_IS_RESERVED(HttpStatus.BAD_REQUEST, 400, "Xe đang được giữ chỗ và không thể chuyển kho"),
+    VEHICLE_NOT_ASSIGNED(HttpStatus.BAD_REQUEST, 400, "Xe chưa được gán vào đơn hàng"),
+
     // Vehicle Price Errors
     VEHICLE_PRICE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "Không tìm thấy bảng giá xe"),
     INVALID_SALE_PRICE_RANGE(HttpStatus.BAD_REQUEST, 400, "Giá bán không hợp được vượt 20% lợi nhuận so với giá mua từ hãng"),

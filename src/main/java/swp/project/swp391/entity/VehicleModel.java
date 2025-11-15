@@ -79,9 +79,6 @@ public class VehicleModel {
     @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<VehicleInstance> vehicleInstances;
 
-    @OneToMany(mappedBy = "vehicleModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<OrderDetail> orderDetails;
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

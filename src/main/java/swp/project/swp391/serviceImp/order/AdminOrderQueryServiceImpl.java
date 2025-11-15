@@ -57,12 +57,14 @@ public class AdminOrderQueryServiceImpl implements OrderQueryService {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        // Lấy toàn bộ danh sách xe của đơn này
-        List<VehicleInstance> vehicles = vehicleRepo.findByOrderId(orderId);
+        // Vì đơn chỉ có 1 xe
+        VehicleInstance vehicle = order.getAssignedVehicle();
 
-        return vehicles.stream()
-                .map(VehicleInstanceResponse::fromEntity)
-                .toList();
+        if (vehicle == null) {
+            return List.of(); // không có xe gắn vào đơn
+        }
+
+        return List.of(VehicleInstanceResponse.fromEntity(vehicle));
     }
 
 }

@@ -1,216 +1,157 @@
-package swp.project.swp391.serviceImp.order;
+    package swp.project.swp391.serviceImp.order;
 
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import swp.project.swp391.constant.ErrorHandler;
-import swp.project.swp391.entity.*;
-import swp.project.swp391.exception.BaseException;
-import swp.project.swp391.repository.*;
-import swp.project.swp391.response.order.OrderApproveResponse;
-import swp.project.swp391.response.order.OrderResponse;
-import swp.project.swp391.security.RbacGuard;
-import swp.project.swp391.service.order.OrderApprovalService;
-import swp.project.swp391.util.VinEngineGenerator;
+    import jakarta.transaction.Transactional;
+    import lombok.RequiredArgsConstructor;
+    import lombok.extern.slf4j.Slf4j;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.*;
+    import java.math.BigDecimal;
+    import java.time.LocalDateTime;
+    import org.springframework.stereotype.Service;
+    import swp.project.swp391.constant.ErrorHandler;
+    import swp.project.swp391.entity.*;
+    import swp.project.swp391.exception.BaseException;
+    import swp.project.swp391.repository.*;
+    import swp.project.swp391.response.order.OrderApproveResponse;
+    import swp.project.swp391.response.order.OrderResponse;
+    import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
+    import swp.project.swp391.security.RbacGuard;
+    import swp.project.swp391.service.order.OrderApprovalService;
+    import java.util.*;
 
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class OrderApprovalServiceImpl implements OrderApprovalService {
+    import static swp.project.swp391.constant.ErrorHandler.INVALID_REQUEST;
 
-    private final OrderRepository orderRepo;
-    private final OrderDetailRepository orderDetailRepo;
-    private final VehicleInstanceRepository vehicleRepo;
-    private final InventoryRepository inventoryRepo;
-    private final DealerRepository dealerRepo;
-    private final RbacGuard guard;
+    @Service
+    @RequiredArgsConstructor
+    @Slf4j
+    public class OrderApprovalServiceImpl implements OrderApprovalService {
 
-    private static final int GEN_ATTEMPTS = 30;
+        private final OrderRepository orderRepo;
+        private final VehicleInstanceRepository vehicleRepo;
+        private final RbacGuard guard;
 
-    @Override
-    @Transactional
-    public OrderApproveResponse approveOrder(Long orderId, User currentUser) {
-        guard.require(guard.has(currentUser, "order.approve"));
+        // =============================== APPROVE ORDER ===============================
+        @Override
+        @Transactional
+        public OrderApproveResponse approveOrder(Long orderId, User currentUser) {
 
-        // ===== LẤY VÀ KIỂM TRA ĐƠN HÀNG =====
-        Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+            guard.require(guard.has(currentUser, "order.approve"));
 
-        if (order.getStatus() != Order.OrderStatus.PENDING) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Chỉ có thể duyệt đơn hàng ở trạng thái PENDING");
-        }
+            Order order = orderRepo.findById(orderId)
+                    .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        Dealer dealer = order.getBuyerDealer();
-        if (dealer == null) {
-            throw new BaseException(ErrorHandler.DEALER_NOT_FOUND);
-        }
-
-        Set<String> existingVins = new HashSet<>();
-        Set<String> existingEngines = new HashSet<>();
-        int createdInstances = 0;
-
-        // ===== DUYỆT TỪNG CHI TIẾT ĐƠN HÀNG =====
-        List<OrderDetail> details = orderDetailRepo.findByOrderId(orderId);
-        for (OrderDetail detail : details) {
-            int qty = detail.getQuantity();
-
-            // Khóa inventory theo dealer + modelColor
-            Inventory inv = inventoryRepo.lockByDealerIdAndVehicleModelColorId(
-                    dealer.getId(), detail.getVehicleModelColor().getId()
-            ).orElseGet(() -> inventoryRepo.save(Inventory.builder()
-                    .dealer(dealer)
-                    .vehicleModelColor(detail.getVehicleModelColor())
-                    .totalQuantity(0)
-                    .reservedQuantity(0)
-                    .availableQuantity(0)
-                    .isActive(true)
-                    .build()));
-
-            for (int i = 0; i < qty; i++) {
-                String vin = generateVinUnique(existingVins, detail.getVehicleModel());
-                String engine = generateEngineUnique(existingEngines, detail.getVehicleModel());
-
-                // Kiểm tra trùng VIN / số máy
-                if (vehicleRepo.existsByVin(vin)) vin = generateVinUnique(existingVins, detail.getVehicleModel());
-                if (vehicleRepo.existsByEngineNumber(engine)) engine = generateEngineUnique(existingEngines, detail.getVehicleModel());
-
-                VehicleInstance instance = VehicleInstance.builder()
-                        .vin(vin)
-                        .engineNumber(engine)
-                        .vehicleModel(detail.getVehicleModel())
-                        .vehicleModelColor(detail.getVehicleModelColor())
-                        .manufacturingDate(LocalDate.now())
-                        .status(VehicleInstance.VehicleStatus.SHIPPING) // ✅ Xe đã được tạo, chờ giao
-                        .isActive(true)
-                        .currentDealer(order.getBuyerDealer())
-                        .currentValue(detail.getUnitPrice())
-                        .order(order) // ✅ Liên kết với đơn hàng
-                        .build();
-
-                vehicleRepo.save(instance);
-                createdInstances++;
-
-                existingVins.add(vin);
-                existingEngines.add(engine);
+            // Chỉ duyệt đơn đang PENDING
+            if (order.getStatus() != Order.OrderStatus.PENDING) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Chỉ có thể duyệt đơn hàng ở trạng thái PENDING");
             }
 
-            inventoryRepo.save(inv);
+            // Nghiệp vụ: approve không cần gắn xe
+            // → xe sẽ được gắn sau bằng /attach-vehicle API
 
-            // ✅ Đánh dấu chi tiết đã xử lý
-            detail.setStatus(OrderDetail.OrderDetailStatus.CONFIRMED);
-            orderDetailRepo.save(detail);
+            order.setStatus(Order.OrderStatus.CONFIRMED);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepo.save(order);
+
+            return new OrderApproveResponse(
+                    order.getId(),
+                    order.getOrderCode(),
+                    "CONFIRMED",
+                    1
+            );
         }
 
-        // ===== CẬP NHẬT TRẠNG THÁI ĐƠN =====
-        order.setStatus(Order.OrderStatus.CONFIRMED);
-        orderRepo.save(order);
+        // =============================== MARK AS SHIPPING ===============================
+        @Override
+        @Transactional
+        public OrderResponse markAsShipping(Long orderId, User currentUser) {
 
-// ===== LOG THANH TOÁN =====
-        if (Boolean.TRUE.equals(order.getIsInstallment())) {
-            log.info("Order {} approved under INSTALLMENT mode — debt will activate when dealer confirms receipt.",
-                    order.getOrderCode());
-        } else {
-            log.info("Order {} approved under FULL PAYMENT, waiting for shipping.", order.getOrderCode());
-        }
+            guard.require(guard.has(currentUser, "order.ship"));
 
-        log.info("✅ Order {} approved successfully (CONFIRMED). Created {} vehicle instances.",
-                order.getOrderCode(), createdInstances);
+            Order order = orderRepo.findById(orderId)
+                    .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        return new OrderApproveResponse(
-                order.getId(),
-                order.getOrderCode(),
-                order.getStatus().name(),
-                createdInstances
-        );
-
-    }
-
-
-    @Override
-    @Transactional
-    public OrderResponse markAsShipping(Long orderId, User currentUser) {
-        guard.require(guard.has(currentUser, "order.ship"));
-        Order order = orderRepo.findById(orderId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
-
-        if (order.getStatus() != Order.OrderStatus.CONFIRMED)
-            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Chỉ đơn CONFIRMED mới có thể chuyển sang SHIPPING");
-
-        order.setStatus(Order.OrderStatus.SHIPPING);
-        orderRepo.save(order);
-        return OrderResponse.fromEntity(order);
-    }
-
-
-    // ===================== VIN / ENGINE GENERATORS =====================
-
-    private String generateVinUnique(Set<String> cache, VehicleModel model) {
-        String wmi = pickWmiFromModel(model);
-        String vdsSeed = model.getModelCode();
-        char plant = 'A';
-
-        for (int i = 0; i < GEN_ATTEMPTS; i++) {
-            String vin = VinEngineGenerator.generateVin(wmi, vdsSeed, plant);
-            if (!cache.contains(vin) && !vehicleRepo.existsByVin(vin)) {
-                cache.add(vin);
-                return vin;
+            // ===== CHECK CƠ BẢN =====
+            if (order.getStatus() != Order.OrderStatus.PAID) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Đơn chưa thanh toán (PAID) nên không thể chuyển sang SHIPPING.");
             }
-            plant = nextPlant(plant);
-        }
-        throw new BaseException(ErrorHandler.INTERNAL_ERROR, "Không thể sinh VIN unique sau nhiều lần thử.");
-    }
 
-    private String generateEngineUnique(Set<String> cache, VehicleModel model) {
-        String prefix = safePrefix(model.getModelCode(), 4);
-        int length = 13;
-
-        for (int i = 0; i < GEN_ATTEMPTS; i++) {
-            String eng = VinEngineGenerator.generateEngineNumber(prefix, length);
-            if (!cache.contains(eng) && !vehicleRepo.existsByEngineNumber(eng)) {
-                cache.add(eng);
-                return eng;
+            if (order.getAssignedVehicle() == null) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Đơn hàng chưa được gắn xe. Không thể chuyển sang SHIPPING.");
             }
-            prefix = mutatePrefix(prefix);
+
+            // ===== CHECK ĐẶC BIỆT CHỈ CHO ĐƠN TRẢ THẲNG =====
+            if (!Boolean.TRUE.equals(order.getIsInstallment())) {
+                // Đơn trả thẳng phải trả đủ 100% mới ship
+                BigDecimal paid = order.getManualPaidAmount() != null
+                        ? order.getManualPaidAmount()
+                        : BigDecimal.ZERO;
+
+                if (paid.compareTo(order.getTotalAmount()) < 0) {
+                    throw new BaseException(INVALID_REQUEST,
+                            "Đơn trả thẳng chưa thanh toán đủ 100%. Không thể chuyển sang SHIPPING.");
+                }
+            }
+
+            // ✅ Đơn trả góp: Không cần check thêm gì
+            // Vì status = PAID nghĩa là đã xác nhận cọc rồi
+
+            // ===== CẬP NHẬT TRẠNG THÁI =====
+            VehicleInstance v = order.getAssignedVehicle();
+            v.setStatus(VehicleInstance.VehicleStatus.SHIPPING);
+            vehicleRepo.save(v);
+
+            order.setStatus(Order.OrderStatus.SHIPPING);
+            orderRepo.save(order);
+
+            return OrderResponse.fromEntity(order);
         }
-        throw new BaseException(ErrorHandler.INTERNAL_ERROR, "Không thể sinh số máy unique sau nhiều lần thử.");
-    }
 
-    private String safePrefix(String s, int maxLen) {
-        if (s == null) return "ENG";
-        String p = s.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
-        if (p.isEmpty()) p = "ENG";
-        return p.length() > maxLen ? p.substring(0, maxLen) : p;
-    }
 
-    private String mutatePrefix(String p) {
-        String allowed = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
-        char last = allowed.charAt((int) (Math.random() * allowed.length()));
-        if (p.length() == 0) return "E" + last;
-        return p.substring(0, Math.max(0, p.length() - 1)) + last;
-    }
+        // =============================== ATTACH VEHICLE ===============================
+        @Override
+        @Transactional
+        public VehicleInstanceResponse attachVehicleToOrder(Long orderId, Long vehicleId, User currentUser) {
 
-    private String pickWmiFromModel(VehicleModel model) {
-        String brand = model.getBrand();
-        if (brand != null) {
-            String w = brand.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
-            if (w.length() >= 3) return w.substring(0, 3);
+            guard.require(guard.has(currentUser, "order.attach_vehicle"));
+
+            Order order = orderRepo.findById(orderId)
+                    .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+
+            if (order.getStatus() != Order.OrderStatus.PAID) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Chỉ đơn đã thanh toán (PAID) mới được gắn xe.");
+            }
+
+            VehicleInstance vehicle = vehicleRepo.findById(vehicleId)
+                    .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
+
+            if (!Boolean.TRUE.equals(vehicle.getIsActive())) {
+                throw new BaseException(ErrorHandler.VEHICLE_IS_INACTIVE);
+            }
+
+            if (vehicle.getStatus() != VehicleInstance.VehicleStatus.AVAILABLE) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Xe phải ở trạng thái AVAILABLE.");
+            }
+
+
+            // Kiểm tra màu/model phải đúng
+            if (!Objects.equals(vehicle.getVehicleModelColor().getId(),
+                    order.getVehicleModelColor().getId())) {
+
+                throw new BaseException(INVALID_REQUEST,
+                        "ModelColor của xe không khớp với đơn hàng.");
+            }
+
+            // Gắn xe
+            order.setAssignedVehicle(vehicle);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepo.save(order);
+
+            return VehicleInstanceResponse.fromEntity(vehicle);
         }
-        String code = model.getModelCode();
-        if (code != null) {
-            String w = code.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
-            if (w.length() >= 3) return w.substring(0, 3);
-        }
-        return "VF8"; // fallback
+
     }
 
-    private char nextPlant(char plant) {
-        String allowed = "ABCDEFGHJKLMNPRSTUVWXYZ";
-        int idx = allowed.indexOf(Character.toUpperCase(plant));
-        return allowed.charAt((idx + 1 + allowed.length()) % allowed.length());
-    }
-}

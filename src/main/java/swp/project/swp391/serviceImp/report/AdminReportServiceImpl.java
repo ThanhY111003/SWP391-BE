@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 public class AdminReportServiceImpl implements AdminReportService {
 
     private final OrderRepository orderRepo;
-    private final OrderDetailRepository orderDetailRepo;
     private final InventoryRepository inventoryRepo;
     private final RbacGuard guard;
 
@@ -92,16 +91,26 @@ public class AdminReportServiceImpl implements AdminReportService {
         if (fromDate == null) fromDate = LocalDate.of(2000, 1, 1);
         if (toDate == null) toDate = LocalDate.now();
 
-        var details = orderDetailRepo.findByOrder_OrderDateBetween(fromDate, toDate);
-        var grouped = details.stream()
-                .collect(Collectors.groupingBy(OrderDetail::getVehicleModelColor));
+        // 🔥 Lấy tất cả đơn hợp lệ (CONFIRMED + COMPLETED)
+        var orders = orderRepo.findByOrderDateBetween(fromDate, toDate).stream()
+                .filter(o -> o.getStatus() == Order.OrderStatus.CONFIRMED
+                        || o.getStatus() == Order.OrderStatus.COMPLETED)
+                .toList();
 
+        // 🔥 Group theo modelColor
+        var grouped = orders.stream()
+                .collect(Collectors.groupingBy(Order::getVehicleModelColor));
+
+        // 🔥 Map thành response
         return grouped.entrySet().stream()
                 .map(entry -> {
                     var vmc = entry.getKey();
-                    long soldCount = entry.getValue().stream().mapToLong(OrderDetail::getQuantity).sum();
-                    BigDecimal totalRevenue = entry.getValue().stream()
-                            .map(OrderDetail::getTotalPrice)
+                    var list = entry.getValue();
+
+                    long soldCount = list.size(); // ❗ mỗi order = 1 xe
+
+                    BigDecimal totalRevenue = list.stream()
+                            .map(Order::getTotalAmount)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     return TopModelResponse.builder()
@@ -116,6 +125,7 @@ public class AdminReportServiceImpl implements AdminReportService {
                 .toList();
     }
 
+
     @Override
     public List<TopDealerResponse> getTopDealers(int limit, LocalDate fromDate, LocalDate toDate) {
         User current = guard.me();
@@ -125,23 +135,24 @@ public class AdminReportServiceImpl implements AdminReportService {
         if (fromDate == null) fromDate = LocalDate.of(2000, 1, 1);
         if (toDate == null) toDate = LocalDate.now();
 
+        // 🔥 Lấy các đơn hợp lệ CONFIRMED + COMPLETED
         var orders = orderRepo.findByOrderDateBetween(fromDate, toDate).stream()
                 .filter(o -> o.getStatus() == Order.OrderStatus.CONFIRMED
                         || o.getStatus() == Order.OrderStatus.COMPLETED)
                 .toList();
 
-        var grouped = orders.stream().collect(Collectors.groupingBy(Order::getBuyerDealer));
+        // 🔥 Group theo dealer
+        var grouped = orders.stream()
+                .collect(Collectors.groupingBy(Order::getBuyerDealer));
 
+        // 🔥 Build response
         return grouped.entrySet().stream()
                 .map(entry -> {
                     var dealer = entry.getKey();
                     var dealerOrders = entry.getValue();
 
-                    long totalOrders = dealerOrders.size();
-                    long totalVehicles = dealerOrders.stream()
-                            .flatMap(o -> o.getOrderDetails().stream())
-                            .mapToLong(OrderDetail::getQuantity).sum();
-
+                    long totalOrders = dealerOrders.size();       // 1 order = 1 xe
+                    long totalVehicles = totalOrders;             // ❗ Mỗi order là 1 xe → same
                     BigDecimal totalAmount = dealerOrders.stream()
                             .map(Order::getTotalAmount)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);

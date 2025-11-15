@@ -41,7 +41,7 @@ public class Order {
     @Column(name = "full_payment_date")
     private LocalDate fullPaymentDate; // Ngày thanh toán đầy đủ
 
-    @Column(name = "payment_notes", columnDefinition = "TEXT")
+    @Column(name = "payment_notes", columnDefinition = "NVARCHAR(MAX)")
     private String paymentNotes;
 
     @Column(name = "is_installment", nullable = false)
@@ -61,6 +61,13 @@ public class Order {
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String notes;
 
+    @Column(name = "manual_paid_amount", precision = 15, scale = 2)
+    private BigDecimal manualPaidAmount;
+
+    @Column(name = "manual_payment_attempts")
+    @Builder.Default
+    private Integer manualPaymentAttempts = 0;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -77,31 +84,65 @@ public class Order {
     private User createdBy;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private Set<OrderDetail> orderDetails = new HashSet<>();
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<InstallmentPlan> installmentPlans = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_model_color_id")
+    private VehicleModelColor vehicleModelColor;   // khách yêu cầu
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_instance_id")
+    private VehicleInstance assignedVehicle;
+    // admin gắn xe cụ thể
+
 
     // ====== PHƯƠNG THỨC TÍNH TOÁN (Transient) ======
 
     @Transient
     public BigDecimal getPaidAmount() {
-        if (Boolean.FALSE.equals(isInstallment)) {
-            return (status == OrderStatus.COMPLETED) ? totalAmount : BigDecimal.ZERO;
-        } else {
-            BigDecimal paidInstallments = installmentPlans == null ? BigDecimal.ZERO :
-                    installmentPlans.stream()
-                            .map(InstallmentPlan::getPaidAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            BigDecimal deposit = depositAmount != null ? depositAmount : BigDecimal.ZERO;
-            return deposit.add(paidInstallments);
+        // ===== TRẢ THẲNG =====
+        if (!Boolean.TRUE.equals(isInstallment)) {
+            BigDecimal manual = manualPaidAmount != null ? manualPaidAmount : BigDecimal.ZERO;
+            return manual;
         }
+
+        // ===== TRẢ GÓP =====
+
+        // ✅ LOGIC MỚI: Chỉ tính deposit khi đã xác nhận (status = PAID trở đi)
+        if (this.status == OrderStatus.PENDING || this.status == OrderStatus.CONFIRMED) {
+            // Chưa xác nhận cọc → chưa trả gì
+            return BigDecimal.ZERO;
+        }
+
+        // Đã xác nhận cọc (PAID trở đi) → tính deposit + installments đã trả
+        BigDecimal paidInstallments = installmentPlans == null ? BigDecimal.ZERO :
+                installmentPlans.stream()
+                        .filter(plan -> plan.getPaidAmount() != null)
+                        .map(InstallmentPlan::getPaidAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal deposit = depositAmount != null ? depositAmount : BigDecimal.ZERO;
+
+        return deposit.add(paidInstallments);
     }
+
 
     @Transient
     public BigDecimal getRemainingAmount() {
         if (totalAmount == null) return BigDecimal.ZERO;
+
+        // ===== TRẢ GÓP =====
+        if (Boolean.TRUE.equals(isInstallment)) {
+            // ✅ LOGIC MỚI:
+            // - Nếu chưa xác nhận cọc → remaining = totalAmount
+            // - Nếu đã xác nhận cọc → remaining = totalAmount - (deposit + installments)
+
+            if (this.status == OrderStatus.PENDING || this.status == OrderStatus.CONFIRMED) {
+                return totalAmount;  // ✅ Chưa trả gì
+            }
+        }
+
+        // ===== TRẢ THẲNG HOẶC TRẢ GÓP ĐÃ XÁC NHẬN CỌC =====
         BigDecimal remaining = totalAmount.subtract(getPaidAmount());
         return remaining.max(BigDecimal.ZERO);
     }
@@ -118,16 +159,6 @@ public class Order {
         return getPaidAmount()
                 .divide(totalAmount, 4, BigDecimal.ROUND_HALF_UP)
                 .multiply(BigDecimal.valueOf(100));
-    }
-
-    /**
-     * Kiểm tra nếu tất cả chi tiết đã giao thành công
-     */
-    @Transient
-    public boolean isAllDelivered() {
-        if (orderDetails == null || orderDetails.isEmpty()) return false;
-        return orderDetails.stream()
-                .allMatch(d -> d.getStatus() == OrderDetail.OrderDetailStatus.DELIVERED);
     }
 
 
@@ -163,6 +194,7 @@ public class Order {
         INSTALLMENT_ACTIVE,  // Dealer đã nhận, đang trả góp
         PARTIALLY_DELIVERED, // Có xe lỗi, đang chờ xử lý
         COMPLETED,           // Hoàn tất (trả góp xong hoặc trả thẳng)
-        CANCELLED            // Đã hủy
+        CANCELLED,
+        PAID
     }
 }

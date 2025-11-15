@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.entity.User;
+import swp.project.swp391.request.order.ConfirmDepositRequest;
+import swp.project.swp391.request.order.ManualPaymentRequest;
 import swp.project.swp391.response.order.OrderApproveResponse;
 import swp.project.swp391.response.order.OrderResponse;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
@@ -80,4 +82,50 @@ public class AdminOrderController {
         OrderResponse res = approvalService.markAsShipping(orderId, me);
         return ResponseEntity.ok(ApiResponse.ok(res, "Cập nhật trạng thái SHIPPING thành công"));
     }
+
+    @Operation(
+            summary = "Nhập số tiền dealer đã thanh toán (Trả thẳng)",
+            description = "Admin nhập số tiền dealer thanh toán cho đơn TRẢ THẲNG. "
+                    + "Tự động cập nhật paidAmount, remaining, progress và COMPLETED nếu đủ."
+    )
+    @PostMapping("/{orderId}/manual-payment")
+    public ResponseEntity<ApiResponse<OrderResponse>> manualPayment(
+            @PathVariable Long orderId,
+            @RequestBody ManualPaymentRequest request
+    ) {
+        User me = guard.me();
+        OrderResponse res = paymentService.manualPayment(orderId, request, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Cập nhật thanh toán trả thẳng thành công"));
+    }
+
+    @Operation(
+            summary = "Xác nhận dealer đã thanh toán tiền cọc (Trả góp)",
+            description = "Admin xác nhận dealer đã nộp tiền cọc cho đơn trả góp. "
+                    + "Cập nhật tiến độ thanh toán và có thể chuyển đơn sang INSTALLMENT_ACTIVE."
+    )
+    @PostMapping("/{orderId}/confirm-deposit")
+    public ResponseEntity<ApiResponse<OrderResponse>> confirmDeposit(
+            @PathVariable Long orderId,
+            @RequestBody ConfirmDepositRequest request
+    ) {
+        User me = guard.me();
+        OrderResponse res = paymentService.confirmDeposit(orderId, request, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Xác nhận tiền cọc thành công"));
+    }
+
+    @Operation(
+            summary = "Gắn xe vào đơn hàng",
+            description = "Admin chọn 1 VehicleInstance (AVAILABLE) để gắn vào đơn hàng PENDING"
+    )
+    @PatchMapping("/{orderId}/attach-vehicle/{vehicleId}")
+    public ResponseEntity<ApiResponse<VehicleInstanceResponse>> attachVehicleToOrder(
+            @PathVariable Long orderId,
+            @PathVariable Long vehicleId
+    ) {
+        User me = guard.me();
+        VehicleInstanceResponse res = approvalService.attachVehicleToOrder(orderId, vehicleId, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Gắn xe vào đơn hàng thành công"));
+    }
+
+
 }

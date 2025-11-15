@@ -3,6 +3,8 @@ package swp.project.swp391.service.vehicle;
 import swp.project.swp391.entity.VehicleInstance;
 import swp.project.swp391.request.vehicle.AssignVehicleRequest;
 import swp.project.swp391.request.vehicle.TransferVehicleRequest;
+import swp.project.swp391.request.vehicle.VehicleInstanceCreateRequest;
+import swp.project.swp391.request.vehicle.VehicleInstanceUpdateRequest;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 
@@ -42,4 +44,7 @@ public interface VehicleInstanceService {
 
     VehicleInstanceResponse transferVehicle(TransferVehicleRequest req);
 
+    VehicleInstanceResponse create(VehicleInstanceCreateRequest request);
+
+    VehicleInstanceResponse update(Long id, VehicleInstanceUpdateRequest request);
 }
