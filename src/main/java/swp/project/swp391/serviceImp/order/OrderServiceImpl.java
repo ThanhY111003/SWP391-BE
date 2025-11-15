@@ -234,8 +234,6 @@ public class OrderServiceImpl implements OrderService {
 
             validateCreditLimit(dealer, remainingAmount);
 
-            // ⛔ Trừ vào debt ngay lập tức
-            updateDealerDebt(dealer, remainingAmount);
         }
 
         // ================================================================
