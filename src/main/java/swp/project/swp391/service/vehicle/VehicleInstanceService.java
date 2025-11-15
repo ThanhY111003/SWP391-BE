@@ -1,11 +1,13 @@
 package swp.project.swp391.service.vehicle;
 
+import org.springframework.web.multipart.MultipartFile;
 import swp.project.swp391.entity.VehicleInstance;
 import swp.project.swp391.request.vehicle.AssignVehicleRequest;
 import swp.project.swp391.request.vehicle.TransferVehicleRequest;
 import swp.project.swp391.request.vehicle.VehicleInstanceCreateRequest;
 import swp.project.swp391.request.vehicle.VehicleInstanceUpdateRequest;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
+import swp.project.swp391.response.vehicle.VehicleImportResult;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 
 import java.util.List;
@@ -47,4 +49,6 @@ public interface VehicleInstanceService {
     VehicleInstanceResponse create(VehicleInstanceCreateRequest request);
 
     VehicleInstanceResponse update(Long id, VehicleInstanceUpdateRequest request);
+
+    VehicleImportResult importVehiclesFromExcel(MultipartFile file);
 }

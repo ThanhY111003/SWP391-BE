@@ -3,28 +3,36 @@ package swp.project.swp391.serviceImp.vehicle;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import swp.project.swp391.constant.ErrorHandler;
 import swp.project.swp391.entity.*;
+import swp.project.swp391.entity.Color;
 import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.*;
-import swp.project.swp391.request.vehicle.AssignVehicleRequest;
-import swp.project.swp391.request.vehicle.TransferVehicleRequest;
-import swp.project.swp391.request.vehicle.VehicleInstanceCreateRequest;
-import swp.project.swp391.request.vehicle.VehicleInstanceUpdateRequest;
+import swp.project.swp391.request.vehicle.*;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
+import swp.project.swp391.response.vehicle.VehicleImportResult;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.vehicle.VehicleInstanceService;
+// ✅ THÊM IMPORT CHO APACHE POI
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+// ✅ THÊM IMPORT CHO PATTERN
+import java.util.regex.Pattern;
+import java.time.ZoneId;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class VehicleInstanceServiceImpl implements VehicleInstanceService {
 
+    private static final Pattern VIN_PATTERN = Pattern.compile("^[A-HJ-NPR-Z0-9]{17}$");
     private final VehicleInstanceRepository vehicleRepo;
     private final CustomerRepository customerRepo;
     private final VehicleModelColorRepository vehicleModelColorRepo;
@@ -32,6 +40,8 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
     private final InventoryRepository inventoryRepo;
     private final RbacGuard guard;
     private final DealerRepository dealerRepo;
+    private final VehicleModelRepository vehicleModelRepo;
+    private final ColorRepository colorRepo;
 
     // --------------------------------------------------------
     // GET ALL
@@ -409,11 +419,144 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
         return VehicleInstanceResponse.fromEntity(vehicle);
     }
 
+    @Override
+    @Transactional
+    public VehicleImportResult importVehiclesFromExcel(MultipartFile file) {
+        guard.require(guard.has(guard.me(), "vehicle.import"));
+
+        VehicleImportResult result = VehicleImportResult.builder()
+                .successRecords(new ArrayList<>())
+                .errorRecords(new ArrayList<>())
+                .build();
+
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(is)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            result.setTotalRows(sheet.getLastRowNum());
+
+            List<VehicleImportRow> rows = parseExcelRows(sheet);
+            Map<Integer, String> validationErrors = validateImportRows(rows);
+
+            int successCount = 0;
+            int failureCount = 0;
+
+            for (VehicleImportRow row : rows) {
+
+                // ❌ Dòng lỗi => ghi lại rồi skip
+                if (validationErrors.containsKey(row.getRowNumber())) {
+                    recordError(result, row, validationErrors.get(row.getRowNumber()));
+                    failureCount++;
+                    continue;
+                }
+
+                Optional<VehicleModelColor> optColor = resolveModelColor(row);
+
+                if (optColor.isEmpty()) {
+                    recordError(result, row,
+                            String.format("Không tìm thấy model '%s' với màu '%s'",
+                                    row.getModelName(), row.getColorName()));
+                    failureCount++;
+                    continue;
+                }
+
+                try {
+                    VehicleModelColor vmc = optColor.get();
+                    VehicleInstance vehicle = vehicleRepo.save(
+                            buildVehicleInstance(row, vmc)
+                    );
+
+                    recordSuccess(result, row, vehicle, vmc);
+                    successCount++;
+
+                } catch (Exception e) {
+                    recordError(result, row, "Lỗi khi lưu xe: " + e.getMessage());
+                    failureCount++;
+                }
+            }
+
+            result.setSuccessCount(successCount);
+            result.setFailureCount(failureCount);
+            return result;
+
+        } catch (Exception e) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Không thể đọc file Excel: " + e.getMessage());
+        }
+    }
+
 
 
     // --------------------------------------------------------
     // HELPER METHODS
     // --------------------------------------------------------
+
+    private VehicleInstance buildVehicleInstance(VehicleImportRow row, VehicleModelColor vmc) {
+
+        VehicleModel model = vmc.getVehicleModel();
+        BigDecimal initialPrice = model.getManufacturerPrice()
+                .add(vmc.getPriceAdjustment() != null ? vmc.getPriceAdjustment() : BigDecimal.ZERO);
+
+        return VehicleInstance.builder()
+                .vin(row.getVin().toUpperCase())
+                .engineNumber(row.getEngineNumber().toUpperCase())
+                .manufacturingDate(row.getManufacturingDate())
+                .vehicleModel(model)
+                .vehicleModelColor(vmc)
+                .status(VehicleInstance.VehicleStatus.AVAILABLE)
+                .isActive(true)
+                .currentDealer(null)
+                .currentValue(initialPrice)
+                .build();
+    }
+
+    private void recordSuccess(VehicleImportResult result,
+                               VehicleImportRow row,
+                               VehicleInstance vehicle,
+                               VehicleModelColor vmc) {
+
+        result.getSuccessRecords().add(
+                VehicleImportResult.VehicleImportSuccess.builder()
+                        .rowNumber(row.getRowNumber())
+                        .vin(vehicle.getVin())
+                        .engineNumber(vehicle.getEngineNumber())
+                        .vehicleId(vehicle.getId())
+                        .modelName(vmc.getVehicleModel().getName())
+                        .colorName(vmc.getColor().getColorName())
+                        .build()
+        );
+    }
+
+
+    private Optional<VehicleModelColor> resolveModelColor(VehicleImportRow row) {
+        Optional<VehicleModel> model =
+                vehicleModelRepo.findByNameIgnoreCase(row.getModelName());
+
+        Optional<Color> color =
+                colorRepo.findByColorNameIgnoreCase(row.getColorName());
+
+        if (model.isEmpty() || color.isEmpty()) return Optional.empty();
+
+        return vehicleModelColorRepo.findByVehicleModelIdAndColorId(
+                model.get().getId(),
+                color.get().getId()
+        );
+    }
+
+    private void recordError(VehicleImportResult result,
+                             VehicleImportRow row,
+                             String msg) {
+
+        result.getErrorRecords().add(
+                VehicleImportResult.VehicleImportError.builder()
+                        .rowNumber(row.getRowNumber())
+                        .vin(row.getVin())
+                        .engineNumber(row.getEngineNumber())
+                        .errorMessage(msg)
+                        .build()
+        );
+    }
+
 
     private boolean isDealerRole(User user) {
         return user.getRoles().stream()
@@ -444,5 +587,137 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
         if (!myDealerId.equals(vehicle.getCurrentDealer().getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN);
         }
+    }
+
+    private List<VehicleImportRow> parseExcelRows(Sheet sheet) {
+        List<VehicleImportRow> rows = new ArrayList<>();
+
+        // Bỏ qua header (row 0)
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+
+            try {
+                VehicleImportRow importRow = VehicleImportRow.builder()
+                        .rowNumber(i + 1)
+                        .vin(getCellValueAsString(row.getCell(0)))
+                        .engineNumber(getCellValueAsString(row.getCell(1)))
+                        .modelName(getCellValueAsString(row.getCell(2)))
+                        .colorName(getCellValueAsString(row.getCell(3)))
+                        .manufacturingDate(getCellValueAsDate(row.getCell(4)))
+                        .build();
+
+                rows.add(importRow);
+            } catch (Exception e) {
+                // Log lỗi parse
+                continue;
+            }
+        }
+
+        return rows;
+    }
+
+    private Map<Integer, String> validateImportRows(List<VehicleImportRow> rows) {
+        Map<Integer, String> errors = new HashMap<>();
+        Set<String> vinsInFile = new HashSet<>();
+        Set<String> enginesInFile = new HashSet<>();
+
+        for (VehicleImportRow row : rows) {
+            List<String> rowErrors = new ArrayList<>();
+
+            // ✅ 1. Validate VIN format
+            if (row.getVin() == null || row.getVin().trim().isEmpty()) {
+                rowErrors.add("VIN không được để trống");
+            } else if (!VIN_PATTERN.matcher(row.getVin().toUpperCase()).matches()) {
+                rowErrors.add("VIN không đúng định dạng (phải 17 ký tự, không chứa I, O, Q)");
+            } else {
+                // ✅ 2. Check VIN trùng trong file
+                if (vinsInFile.contains(row.getVin().toUpperCase())) {
+                    rowErrors.add("VIN bị trùng trong file Excel");
+                } else {
+                    vinsInFile.add(row.getVin().toUpperCase());
+
+                    // ✅ 3. Check VIN trùng trong DB
+                    if (vehicleRepo.existsByVin(row.getVin().toUpperCase())) {
+                        rowErrors.add("VIN đã tồn tại trong hệ thống");
+                    }
+                }
+            }
+
+            // ✅ 4. Validate EngineNumber
+            if (row.getEngineNumber() == null || row.getEngineNumber().trim().isEmpty()) {
+                rowErrors.add("Số máy không được để trống");
+            } else {
+                // ✅ 5. Check Engine trùng trong file
+                if (enginesInFile.contains(row.getEngineNumber().toUpperCase())) {
+                    rowErrors.add("Số máy bị trùng trong file Excel");
+                } else {
+                    enginesInFile.add(row.getEngineNumber().toUpperCase());
+
+                    // ✅ 6. Check Engine trùng trong DB
+                    if (vehicleRepo.existsByEngineNumber(row.getEngineNumber().toUpperCase())) {
+                        rowErrors.add("Số máy đã tồn tại trong hệ thống");
+                    }
+                }
+            }
+
+            // ✅ 7. Validate ModelName
+            if (row.getModelName() == null || row.getModelName().trim().isEmpty()) {
+                rowErrors.add("Tên Model không được để trống");
+            } else {
+                Optional<VehicleModel> model = vehicleModelRepo.findByNameIgnoreCase(row.getModelName());
+                if (model.isEmpty()) {
+                    rowErrors.add(String.format("Model '%s' không tồn tại trong hệ thống", row.getModelName()));
+                }
+            }
+
+            // ✅ 8. Validate ColorName
+            if (row.getColorName() == null || row.getColorName().trim().isEmpty()) {
+                rowErrors.add("Tên màu không được để trống");
+            } else {
+                Optional<Color> color = colorRepo.findByColorNameIgnoreCase(row.getColorName());
+                if (color.isEmpty()) {
+                    rowErrors.add(String.format("Màu '%s' không tồn tại trong hệ thống", row.getColorName()));
+                }
+            }
+
+            // Lưu lỗi nếu có
+            if (!rowErrors.isEmpty()) {
+                errors.put(row.getRowNumber(), String.join("; ", rowErrors));
+            }
+        }
+
+        return errors;
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) return "";
+
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            default:
+                return "";
+        }
+    }
+
+    private LocalDate getCellValueAsDate(Cell cell) {
+        if (cell == null) return null;
+
+        try {
+            if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+                return cell.getDateCellValue().toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+
+        return null;
     }
 }

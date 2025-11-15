@@ -89,6 +89,7 @@ public class DataInitializer implements CommandLineRunner {
 
                 // Vehicle Instance
                 {"vehicle", "read", "Xem xe", "Xem thông tin xe"},
+                {"vehicle", "import", "import xe vào hệ thống qua excel", "import xe vào hệ thống qua excel"},
                 {"vehicle", "read_all", "Xem tất cả xe", "Xem thông tin tất xe"},
                 {"vehicle", "update_status", "Cập nhật trạng thái xe", "Cập nhật trạng thái xe (IN_STOCK ↔ RESERVED)"},
                 {"vehicle", "deactive", "Vô hiệu hoá xe", "Vô hiệu hoá xe"},

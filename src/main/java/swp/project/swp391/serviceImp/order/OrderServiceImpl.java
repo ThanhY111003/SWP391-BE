@@ -79,12 +79,10 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // Validation
-        if (order.getStatus() != Order.OrderStatus.SHIPPING &&
-                order.getStatus() != Order.OrderStatus.PARTIALLY_DELIVERED) {
+        if (order.getStatus() != Order.OrderStatus.SHIPPING) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
-                    "Chỉ đơn SHIPPING hoặc PARTIALLY_DELIVERED mới có thể xác nhận đã nhận");
+                    "Chỉ đơn SHIPPING mới có thể xác nhận đã nhận");
         }
-
         if (!Objects.equals(order.getBuyerDealer().getId(), dealer.getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN,
                     "Không thể xác nhận đơn của đại lý khác");
@@ -100,6 +98,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
                     "Xe đang sửa chữa, không thể xác nhận đã nhận");
         }
+
 
         // ============================================================
         // 1️⃣ NHẬP XE VỀ ĐẠI LÝ
@@ -250,6 +249,8 @@ public class OrderServiceImpl implements OrderService {
                 .buyerDealer(dealer)
                 .createdBy(user)
                 .vehicleModelColor(color)   // lưu thẳng request của dealer
+                .modelNameSnapshot(model.getName())
+                .colorNameSnapshot(color.getColor().getColorName())
                 .build();
 
         // ================================================================
