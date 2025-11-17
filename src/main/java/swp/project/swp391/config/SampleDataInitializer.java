@@ -208,7 +208,11 @@ public class SampleDataInitializer implements CommandLineRunner {
                 .build();
         vehicleModelRepository.save(vf9);
 
+<<<<<<< HEAD
           // ✅ Colors đơn giản cho VF8 (để test import Excel)
+=======
+        // ✅ Colors đơn giản cho VF8 (để test import Excel)
+>>>>>>> 1f561b99e46e81773627663eca47ae76f4904c24
         createColor(vf8, "Trắng", "#FFFFFF", BigDecimal.ZERO);
         createColor(vf8, "Đen", "#000000", new BigDecimal("10000000"));
         createColor(vf8, "Đỏ", "#FF0000", new BigDecimal("15000000"));    // ✅ THÊM
