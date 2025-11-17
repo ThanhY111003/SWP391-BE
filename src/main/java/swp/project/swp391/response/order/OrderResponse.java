@@ -3,7 +3,6 @@ package swp.project.swp391.response.order;
 import lombok.*;
 import swp.project.swp391.entity.Order;
 import swp.project.swp391.entity.VehicleInstance;
-import swp.project.swp391.entity.VehicleModelColor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -146,8 +145,8 @@ public class OrderResponse {
                 .requestedModelColor(order.getVehicleModelColor() != null ?
                         VehicleRequestInfo.builder()
                                 .id(order.getVehicleModelColor().getId())
-                                .modelName(order.getVehicleModelColor().getVehicleModel().getName())
-                                .colorName(order.getVehicleModelColor().getColor().getColorName())
+                                .modelName(order.getModelNameSnapshot())    // ⭐ Dùng snapshot
+                                .colorName(order.getColorNameSnapshot())    // ⭐ Dùng snapshot
                                 .build() : null)
 
                 // ASSIGNED VEHICLE

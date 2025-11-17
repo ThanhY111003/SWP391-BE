@@ -208,39 +208,42 @@ public class SampleDataInitializer implements CommandLineRunner {
                 .build();
         vehicleModelRepository.save(vf9);
 
-        // Colors cho VF8
-        createColor(vf8, "Trắng Ngọc Trai", "#FFFFFF", BigDecimal.ZERO);
-        createColor(vf8, "Đen Tuxedo", "#000000", new BigDecimal("10000000"));
-        createColor(vf8, "Đỏ Rubicon", "#8B0000", new BigDecimal("15000000"));
+          // ✅ Colors đơn giản cho VF8 (để test import Excel)
+        createColor(vf8, "Trắng", "#FFFFFF", BigDecimal.ZERO);
+        createColor(vf8, "Đen", "#000000", new BigDecimal("10000000"));
+        createColor(vf8, "Đỏ", "#FF0000", new BigDecimal("15000000"));    // ✅ THÊM
+        createColor(vf8, "Xanh", "#0000FF", new BigDecimal("12000000"));  // ✅ THÊM
+        createColor(vf8, "Vàng", "#FFFF00", new BigDecimal("8000000"));   // ✅ THÊM (để test lỗi)
 
-        // Colors cho VF9
-        createColor(vf9, "Trắng Ngọc Trai", "#FFFFFF", BigDecimal.ZERO);
-        createColor(vf9, "Xanh Đại Dương", "#0047AB", new BigDecimal("20000000"));
-        createColor(vf9, "Bạc Titan", "#C0C0C0", new BigDecimal("10000000"));
+        // ✅ Colors đơn giản cho VF9
+        createColor(vf9, "Trắng", "#FFFFFF", BigDecimal.ZERO);
+        createColor(vf9, "Xanh", "#0000FF", new BigDecimal("20000000"));  // ✅ THÊM
+        createColor(vf9, "Bạc", "#C0C0C0", new BigDecimal("10000000"));
 
-        System.out.println(">>> Created 2 Vehicle Models with 6 Colors!");
+        System.out.println(">>> Created 2 Vehicle Models with colors!");
     }
 
     private void createColor(VehicleModel model, String name, String hex, BigDecimal adjustment) {
-        // 1️⃣ Tạo hoặc lấy Color trong catalog
-        Color color = colorRepository.findByHexCode(hex)
-                .orElseGet(() -> {
-                    Color c = Color.builder()
-                            .colorName(name)
-                            .hexCode(hex)
-                            .isActive(true)
-                            .build();
-                    return colorRepository.save(c);
-                });
 
-        // 2️⃣ Gán Color vào model
-        VehicleModelColor modelColor = VehicleModelColor.builder()
+        // 1️⃣ Lấy hoặc tạo màu theo tên (name)
+        Color color = colorRepository.findByColorNameIgnoreCase(name)
+                .orElseGet(() -> colorRepository.save(
+                        Color.builder()
+                                .colorName(name)
+                                .hexCode(hex)
+                                .isActive(true)
+                                .build()
+                ));
+
+        // 2️⃣ Gán màu vào model
+        VehicleModelColor vmc = VehicleModelColor.builder()
                 .vehicleModel(model)
                 .color(color)
                 .priceAdjustment(adjustment)
+                .isActive(true)
                 .build();
 
-        vehicleModelColorRepository.save(modelColor);
+        vehicleModelColorRepository.save(vmc);
     }
 
 

@@ -83,6 +83,10 @@ public class Order {
     @JoinColumn(name = "created_by_user_id", nullable = false)
     private User createdBy;
 
+    private String modelNameSnapshot;
+
+    private String colorNameSnapshot;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<InstallmentPlan> installmentPlans = new HashSet<>();
 

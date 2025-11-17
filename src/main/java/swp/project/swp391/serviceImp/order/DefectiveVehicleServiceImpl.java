@@ -12,6 +12,8 @@ import swp.project.swp391.response.defective.RepairedVehicleResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.order.DefectiveVehicleService;
 import lombok.extern.slf4j.Slf4j;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -25,6 +27,7 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
     private final DealerRepository dealerRepo;
     private final VehicleInstanceRepository vehicleRepo;
     private final InventoryRepository inventoryRepo;
+    private final VehiclePriceRepository vehiclePriceRepository;
     private final OrderRepository orderRepo;
     private final RbacGuard guard;
 
@@ -148,20 +151,30 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
 
         guard.require(guard.has(dealerUser, "vehicle.receive_repair"));
 
+        // ✅ Load dealer với level
         Dealer dealer = dealerRepo.findById(dealerUser.getDealer().getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
+
+        // ✅ Force initialize level
+        DealerLevel dealerLevel = dealer.getLevel();
+        if (dealerLevel == null) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Dealer không có level hợp lệ");
+        }
 
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
         if (!Objects.equals(order.getBuyerDealer().getId(), dealer.getId())) {
-            throw new BaseException(ErrorHandler.FORBIDDEN, "Đơn báo lỗi hàng không thuộc dealer hiện tại");
+            throw new BaseException(ErrorHandler.FORBIDDEN,
+                    "Đơn hàng không thuộc dealer hiện tại");
         }
 
-        // 🔥 LẤY XE TỪ ORDER — KHÔNG CẦN vehicleId
+        // 🔥 LẤY XE TỪ ORDER — 1 đơn = 1 xe
         VehicleInstance vehicle = order.getAssignedVehicle();
         if (vehicle == null) {
-            throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED, "Đơn hàng chưa có xe gắn vào");
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED,
+                    "Đơn hàng chưa có xe gắn vào");
         }
 
         if (vehicle.getStatus() != VehicleInstance.VehicleStatus.SHIPPING) {
@@ -169,19 +182,24 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
                     "Xe phải ở trạng thái SHIPPING mới có thể xác nhận nhận lại");
         }
 
-        // Tránh nhận 2 lần
-        if (vehicle.getCurrentDealer() != null &&
-                Objects.equals(vehicle.getCurrentDealer().getId(), dealer.getId())) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST,
-                    "Xe này đã được nhập kho trước đó");
-        }
-
-        // Cập nhật xe
+        // ✅ Cập nhật xe
         vehicle.setStatus(VehicleInstance.VehicleStatus.IN_STOCK);
         vehicle.setCurrentDealer(dealer);
+
+        // ✅ CẬP NHẬT GIÁ XE (giống như lần đầu nhận xe)
+        VehiclePrice vehiclePrice = vehiclePriceRepository
+                .findActiveByVehicleModelColorAndDealerLevel(
+                        vehicle.getVehicleModelColor(),
+                        dealerLevel,
+                        LocalDate.now()
+                )
+                .orElseThrow(() -> new BaseException(ErrorHandler.INVALID_REQUEST,
+                        "Không tìm thấy giá bán cho dealer level này với modelColor của xe."));
+
+        vehicle.setCurrentValue(vehiclePrice.getWholesalePrice());
         vehicleRepo.save(vehicle);
 
-        // Cập nhật inventory
+        // ✅ Cập nhật inventory (không cần check trùng vì xe từ SHIPPING về)
         Inventory inv = inventoryRepo.lockByDealerIdAndVehicleModelColorId(
                 dealer.getId(),
                 vehicle.getVehicleModelColor().getId()
@@ -200,7 +218,7 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         inv.setTotalQuantity(inv.getTotalQuantity() + 1);
         inventoryRepo.save(inv);
 
-        // Cập nhật trạng thái đơn
+        // ✅ Cập nhật trạng thái đơn (trở lại trạng thái cũ)
         if (Boolean.TRUE.equals(order.getIsInstallment())) {
             order.setStatus(Order.OrderStatus.INSTALLMENT_ACTIVE);
         } else {

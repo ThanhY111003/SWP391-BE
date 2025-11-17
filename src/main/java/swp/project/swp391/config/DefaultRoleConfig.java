@@ -16,7 +16,7 @@ public class DefaultRoleConfig {
             ),
             "EVM_STAFF", List.of(
                     "user.create","user.read","user.update","user.inactive","user.reactivate","user.assignDealer",
-                    "vehicle.read", "vehicle.read_all", "vehicle.assign_customer", "vehicle.deactive", "vehicle.active","vehicle.update_status","vehicle.transfer","vehicle.create","vehicle.update",
+                    "vehicle.read", "vehicle.read_all", "vehicle.assign_customer", "vehicle.deactive", "vehicle.active","vehicle.update_status","vehicle.transfer","vehicle.create","vehicle.update","vehicle.import",
                     "vehicleModel.create","vehicleModel.update","vehicleModel.update","vehicleModel.viewAll","vehicleModel.inactive","vehicleModel.reactivate","vehicleModel.view",
                     "color.update","color.create","color.inactive","color.reactive",
                     "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
