@@ -17,16 +17,4 @@ public interface DealerWarrantyRepairReportRepository extends JpaRepository<Deal
 
     boolean existsByVehicleInstanceIdAndStatusIn(Long vehicleInstanceId, List<DealerWarrantyRepairReport.WarrantyStatus> statuses);
 
-    @Query("""
-    SELECT vp FROM VehiclePrice vp
-    WHERE vp.vehicleModelColor.id = :colorId
-      AND vp.dealerLevel.id = :levelId
-      AND vp.isActive = true
-      AND (vp.effectiveTo IS NULL OR vp.effectiveTo >= CURRENT_DATE)
-      AND vp.effectiveFrom <= CURRENT_DATE
-    ORDER BY vp.effectiveFrom DESC
-    LIMIT 1
-""")
-    Optional<VehiclePrice> findActivePriceByColorAndDealerLevel(Long colorId, Long levelId);
-
 }

@@ -13,6 +13,7 @@ import swp.project.swp391.request.vehicle.*;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleImportResult;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceWithCustomerResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.vehicle.VehicleInstanceService;
 // ✅ THÊM IMPORT CHO APACHE POI
@@ -47,20 +48,18 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
     // GET ALL
     // --------------------------------------------------------
     @Override
-    public List<VehicleInstanceResponse> getAll(Long dealerId, VehicleInstance.VehicleStatus status, Boolean activeOnly) {
+    public List<VehicleInstanceWithCustomerResponse> getAll(Long dealerId, VehicleInstance.VehicleStatus status, Boolean activeOnly) {
         guard.require(guard.has(guard.me(), "vehicle.read_all"));
         User current = guard.me();
 
         List<VehicleInstance> list = vehicleRepo.findAll();
 
-        // Nếu là Dealer role => chỉ thấy xe thuộc đại lý mình
         if (isDealerRole(current)) {
             Long myDealerId = getDealerId(current);
             list = list.stream()
                     .filter(v -> v.getCurrentDealer() != null && myDealerId.equals(v.getCurrentDealer().getId()))
                     .collect(Collectors.toList());
         } else if (dealerId != null) {
-            // ADMIN / EVM_STAFF có thể lọc dealer bất kỳ
             list = list.stream()
                     .filter(v -> v.getCurrentDealer() != null && dealerId.equals(v.getCurrentDealer().getId()))
                     .collect(Collectors.toList());
@@ -79,9 +78,10 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
         }
 
         return list.stream()
-                .map(VehicleInstanceResponse::fromEntity)
+                .map(VehicleInstanceWithCustomerResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
 
     @Override
     @Transactional
@@ -170,14 +170,15 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
     // GET BY ID
     // --------------------------------------------------------
     @Override
-    public VehicleInstanceResponse getById(Long id) {
+    public VehicleInstanceWithCustomerResponse getById(Long id) {
         guard.require(guard.has(guard.me(), "vehicle.read"));
         VehicleInstance v = vehicleRepo.findById(id)
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
 
         checkDealerOwnership(v);
-        return VehicleInstanceResponse.fromEntity(v);
+        return VehicleInstanceWithCustomerResponse.fromEntity(v);
     }
+
 
     // --------------------------------------------------------
     // ASSIGN TO CUSTOMER
@@ -277,6 +278,12 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
                 .orElseThrow(() -> new BaseException(ErrorHandler.VEHICLE_INSTANCE_NOT_FOUND));
 
         checkDealerOwnership(v);
+
+        // ❌ Không cho deactivate nếu xe đã gắn vào đơn hàng
+        if (v.getOrder() != null) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Không thể vô hiệu hóa xe đã gắn vào đơn hàng.");
+        }
 
         if (v.getStatus() != VehicleInstance.VehicleStatus.IN_STOCK)
             throw new BaseException(ErrorHandler.ONLY_IN_STOCK_CAN_DEACTIVATE);

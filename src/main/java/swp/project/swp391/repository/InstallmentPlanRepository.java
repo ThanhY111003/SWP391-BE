@@ -12,9 +12,6 @@ import java.util.Optional;
 @Repository
 public interface InstallmentPlanRepository extends JpaRepository<InstallmentPlan, Long> {
 
-    @Query("SELECT SUM(p.paidAmount) FROM InstallmentPlan p WHERE p.order.id = :orderId")
-    Optional<BigDecimal> sumPaidAmountByOrderId(@Param("orderId") Long orderId);
-
     // ✅ tìm theo số thứ tự kỳ và đơn hàng
     Optional<InstallmentPlan> findByOrderIdAndInstallmentNumber(Long orderId, Integer installmentNumber);
 }

@@ -2,6 +2,8 @@ package swp.project.swp391.repository;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import swp.project.swp391.entity.Order;
 
@@ -12,9 +14,6 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    Optional<Order> findByAssignedVehicleId(Long vehicleId);
-
-    Optional<Order> findByIdAndBuyerDealerId(Long orderId, Long dealerId);
 
     // Load các quan hệ cần thiết (không còn orderDetails nữa)
     @EntityGraph(attributePaths = {
@@ -36,5 +35,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findOneByIdAndBuyerDealerId(Long orderId, Long dealerId);
 
     List<Order> findByOrderDateBetween(LocalDate fromDate, LocalDate toDate);
+
+    @Query("""
+    SELECT COUNT(o)
+    FROM Order o
+    WHERE o.buyerDealer.id = :dealerId
+      AND o.status IN (:statuses)
+      AND o.orderDate BETWEEN :start AND :end
+""")
+    long countOrdersByDealerAndMonth(
+            @Param("dealerId") Long dealerId,
+            @Param("statuses") List<Order.OrderStatus> statuses,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
+
 }
 

@@ -4,6 +4,9 @@ FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 COPY . .
 
+# FIX QUAN TRỌNG
+RUN chmod +x mvnw
+
 RUN ./mvnw -q -DskipTests clean package
 
 # Run stage

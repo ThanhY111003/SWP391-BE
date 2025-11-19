@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import swp.project.swp391.api.ApiResponse;
 import swp.project.swp391.entity.User;
 import swp.project.swp391.request.dealer.DealerRequest;
+import swp.project.swp391.response.dealer.DealerDetailResponse;
 import swp.project.swp391.response.dealer.DealerResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.dealer.DealerService;
@@ -76,11 +77,11 @@ public class DealerController {
 
     @Operation(summary = "Lấy chi tiết Dealer", description = "Trả về thông tin chi tiết của một Dealer theo ID")
     @GetMapping("/{dealerId}")
-    public ResponseEntity<ApiResponse<DealerResponse>> getDealer(
+    public ResponseEntity<ApiResponse<DealerDetailResponse>> getDealer(
             @PathVariable Long dealerId,
             Principal principal) {
         User currentUser = principal != null ? guard.me() : null;
-        DealerResponse dealerResponse = dealerService.getDealer(dealerId, currentUser);
+        DealerDetailResponse dealerResponse = dealerService.getDealer(dealerId, currentUser);
         return ResponseEntity.ok(ApiResponse.ok(dealerResponse, "Lấy thông tin Dealer thành công"));
     }
 }

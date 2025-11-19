@@ -1,6 +1,7 @@
 package swp.project.swp391.service.dealer;
 
 import swp.project.swp391.request.dealer.DealerRequest;
+import swp.project.swp391.response.dealer.DealerDetailResponse;
 import swp.project.swp391.response.dealer.DealerResponse;
 import swp.project.swp391.entity.User;
 
@@ -21,7 +22,7 @@ public interface DealerService {
     List<DealerResponse> getAllDealers(User currentUser);
 
     // Phương thức mới để lấy thông tin một Dealer cụ thể
-    DealerResponse getDealer(Long dealerId, User currentUser);
+    DealerDetailResponse getDealer(Long dealerId, User currentUser);
 
     DealerResponse editDealer(Long dealerId, DealerRequest dealerRequest, User currentUser);
 }

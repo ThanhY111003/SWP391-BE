@@ -9,6 +9,7 @@ import swp.project.swp391.request.vehicle.VehicleInstanceUpdateRequest;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleImportResult;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceWithCustomerResponse;
 
 import java.util.List;
 
@@ -17,12 +18,12 @@ public interface VehicleInstanceService {
     /**
      * Lấy danh sách xe (có thể lọc theo đại lý, trạng thái, và activeOnly)
      */
-    List<VehicleInstanceResponse> getAll(Long dealerId, VehicleInstance.VehicleStatus status, Boolean activeOnly);
+    List<VehicleInstanceWithCustomerResponse> getAll(Long dealerId, VehicleInstance.VehicleStatus status, Boolean activeOnly);
 
     /**
      * Lấy chi tiết 1 xe theo ID
      */
-    VehicleInstanceResponse getById(Long id);
+    VehicleInstanceWithCustomerResponse getById(Long id);
 
     /**
      * Gán xe cho khách hàng (bán xe)

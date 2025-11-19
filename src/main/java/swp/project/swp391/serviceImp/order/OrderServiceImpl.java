@@ -203,6 +203,25 @@ public class OrderServiceImpl implements OrderService {
         if (dealer == null || Boolean.FALSE.equals(dealer.getIsActive())) {
             throw new BaseException(ErrorHandler.DEALER_NOT_FOUND);
         }
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+
+        long count = orderRepository.countOrdersByDealerAndMonth(
+                dealer.getId(),
+                List.of(Order.OrderStatus.COMPLETED, Order.OrderStatus.INSTALLMENT_ACTIVE),
+                startOfMonth,
+                endOfMonth
+        );
+
+        Integer maxAllowed = dealer.getLevel().getMaxOrderQuantity();
+
+        if (maxAllowed != null && count >= maxAllowed) {
+            throw new BaseException(
+                    ErrorHandler.INVALID_REQUEST,
+                    "Đại lý đã đạt giới hạn số lượng đơn trong tháng (" + maxAllowed + ")."
+            );
+        }
+
 
         // 2️⃣ Lấy modelColor mà dealer yêu cầu
         VehicleModelColor color = vehicleModelColorRepository.findById(request.getVehicleModelColorId())

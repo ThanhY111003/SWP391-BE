@@ -11,9 +11,6 @@ public interface DefectiveVehicleReportRepository extends JpaRepository<Defectiv
     List<DefectiveVehicleReport> findByVehicleInstanceOrderId(Long orderId);
     boolean existsByVehicleInstanceId(Long vehicleId);
     // ✅ Kiểm tra xem xe có báo lỗi chưa được duyệt không
-    boolean existsByVehicleInstanceIdAndIsApprovedFalse(Long vehicleInstanceId);
-
-    boolean existsByVehicleInstanceIdAndIsRepairCompletedTrue(Long vehicleInstanceId);
 
 }
 

@@ -22,6 +22,7 @@ import swp.project.swp391.request.vehicle.VehicleInstanceUpdateRequest;
 import swp.project.swp391.response.vehicle.CustomerVehicleResponse;
 import swp.project.swp391.response.vehicle.VehicleImportResult;
 import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceWithCustomerResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.vehicle.VehicleInstanceService;
 
@@ -38,7 +39,7 @@ public class VehicleInstanceController {
 
     @Operation(summary = "Lấy danh sách xe (lọc theo đại lý, trạng thái, active)")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<VehicleInstanceResponse>>> getAll(
+    public ResponseEntity<ApiResponse<List<VehicleInstanceWithCustomerResponse>>> getAll(
             @RequestParam(required = false) Long dealerId,
             @RequestParam(required = false) VehicleInstance.VehicleStatus status,
             @RequestParam(required = false, defaultValue = "false") Boolean activeOnly) {
@@ -48,7 +49,7 @@ public class VehicleInstanceController {
 
     @Operation(summary = "Lấy chi tiết xe theo ID")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<VehicleInstanceResponse>> getById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<VehicleInstanceWithCustomerResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(service.getById(id), "Lấy thông tin xe thành công"));
     }
 

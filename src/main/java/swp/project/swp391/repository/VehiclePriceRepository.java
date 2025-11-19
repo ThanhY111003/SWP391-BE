@@ -67,14 +67,5 @@ public interface VehiclePriceRepository extends JpaRepository<VehiclePrice, Long
                                      @Param("effectiveFrom") LocalDate effectiveFrom,
                                      @Param("effectiveTo") LocalDate effectiveTo);
 
-    @Query("""
-        SELECT vp FROM VehiclePrice vp
-        WHERE vp.vehicleModelColor.id = :colorId
-          AND vp.dealerLevel.id = :levelId
-          AND vp.isActive = true
-          AND (vp.effectiveTo IS NULL OR vp.effectiveTo >= CURRENT_DATE)
-          AND vp.effectiveFrom <= CURRENT_DATE
-        ORDER BY vp.effectiveFrom DESC
-    """)
-    Optional<VehiclePrice> findActivePriceByColorAndDealerLevel(Long colorId, Long levelId);
+
 }

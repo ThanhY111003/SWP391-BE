@@ -11,6 +11,7 @@ import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.repository.DealerLevelRepository;
 import swp.project.swp391.repository.DealerRepository;
 import swp.project.swp391.request.dealer.DealerRequest;
+import swp.project.swp391.response.dealer.DealerDetailResponse;
 import swp.project.swp391.response.dealer.DealerResponse;
 import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.dealer.DealerService;
@@ -126,14 +127,27 @@ public class DealerServiceImpl implements DealerService {
 
     @Override
     @Transactional(readOnly = true)
-    public DealerResponse getDealer(Long dealerId, User currentUser) {
-        // ✅ Chỉ hãng (ADMIN / EVM_STAFF) có quyền xem chi tiết dealer
+    public DealerDetailResponse getDealer(Long dealerId, User currentUser) {
+
+        boolean isDealer = currentUser.getDealer() != null;
+
+        // ============================
+        // 1) Nếu là Dealer role → CHỈ trả dealer của chính mình
+        // ============================
+        if (isDealer) {
+            Dealer myDealer = currentUser.getDealer();  // Dealer gắn trong user
+            return DealerDetailResponse.fromEntity(myDealer);
+        }
+
+        // ============================
+        // 2) Nếu là hãng (ADMIN / EVM_STAFF) → được xem bất kỳ đại lý nào
+        // ============================
         guard.require(guard.has(currentUser, "dealer.read"));
 
         Dealer dealer = dealerRepository.findById(dealerId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
 
-        return toResponse(dealer);
+        return DealerDetailResponse.fromEntity(dealer);
     }
 
 
