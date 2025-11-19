@@ -1,31 +1,31 @@
 package swp.project.swp391.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inventories",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"dealer_id", "vehicle_model_id"}))
-@Data
+        uniqueConstraints = @UniqueConstraint(columnNames = {"dealer_id", "vehicle_model_color_id"}))
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Inventory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Integer quantity = 0; // tổng số xe nhập
+    @Column(name = "total_quantity", nullable = false)
+    private Integer totalQuantity = 0;
 
     @Column(name = "reserved_quantity", nullable = false)
-    private Integer reservedQuantity = 0; // xe đã giữ chỗ
+    private Integer reservedQuantity = 0;
 
     @Column(name = "available_quantity", nullable = false)
-    private Integer availableQuantity = 0; // quantity - reserved
+    private Integer availableQuantity = 0;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -36,12 +36,10 @@ public class Inventory {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Liên kết tới model
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vehicle_model_id", nullable = false)
-    private VehicleModel vehicleModel;
+    @JoinColumn(name = "vehicle_model_color_id", nullable = false)
+    private VehicleModelColor vehicleModelColor;
 
-    // Liên kết tới dealer
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dealer_id", nullable = false)
     private Dealer dealer;
@@ -60,6 +58,6 @@ public class Inventory {
     }
 
     private void calculateAvailableQuantity() {
-        this.availableQuantity = this.quantity - this.reservedQuantity;
+        this.availableQuantity = this.totalQuantity - this.reservedQuantity;
     }
 }

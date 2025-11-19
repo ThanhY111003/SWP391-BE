@@ -12,8 +12,9 @@ public class DealerResponse {
     private String email;
     private Boolean isActive;
     private String region;
+    private Long dealerLevelId;
 
-    public DealerResponse(Long id, String name, String address, String phoneNumber, String email, Boolean isActive, String region) {
+    public DealerResponse(Long id, String name, String address, String phoneNumber, String email, Boolean isActive, String region, Long dealerLevelId) {
         this.id = id;
         this.name = name;
         this.address = address;
@@ -21,5 +22,6 @@ public class DealerResponse {
         this.email = email;
         this.isActive = isActive;
         this.region = region;
+        this.dealerLevelId = dealerLevelId;
     }
 }

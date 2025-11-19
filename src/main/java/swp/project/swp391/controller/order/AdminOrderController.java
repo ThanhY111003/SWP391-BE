@@ -1,0 +1,131 @@
+package swp.project.swp391.controller.order;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import swp.project.swp391.api.ApiResponse;
+import swp.project.swp391.entity.User;
+import swp.project.swp391.request.order.ConfirmDepositRequest;
+import swp.project.swp391.request.order.ManualPaymentRequest;
+import swp.project.swp391.response.order.OrderApproveResponse;
+import swp.project.swp391.response.order.OrderResponse;
+import swp.project.swp391.response.vehicle.VehicleInstanceResponse;
+import swp.project.swp391.security.RbacGuard;
+import swp.project.swp391.service.order.OrderApprovalService;
+import swp.project.swp391.service.order.OrderQueryService;
+import swp.project.swp391.service.order.PaymentService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/orders")
+@RequiredArgsConstructor
+@Tag(name = "Quản lý đơn hàng (Admin)", description = "Các API quản trị đơn hàng cho Admin – duyệt, hủy, xác nhận thanh toán")
+public class AdminOrderController {
+
+    private final OrderApprovalService approvalService;
+    private final PaymentService paymentService;
+    private final RbacGuard guard;
+    private final OrderQueryService adminOrderQueryService; // Bean dành riêng cho Admin
+
+    @Operation(summary = "Lấy danh sách đơn hàng", description = "Trả về danh sách tất cả đơn hàng trong hệ thống (dành cho Admin)")
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getAll() {
+        List<OrderResponse> res = adminOrderQueryService.getAllOrders(guard.me());
+        return ResponseEntity.ok(ApiResponse.ok(res, "Lấy danh sách đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Xem chi tiết đơn hàng", description = "Trả về thông tin chi tiết của một đơn hàng theo ID")
+    @GetMapping("/{orderId}")
+    public ResponseEntity<ApiResponse<OrderResponse>> getById(@PathVariable Long orderId) {
+        OrderResponse res = adminOrderQueryService.getOrderById(orderId, guard.me());
+        return ResponseEntity.ok(ApiResponse.ok(res, "Lấy chi tiết đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Duyệt đơn hàng (Approve)", description = "Phê duyệt đơn hàng, tự động tạo VIN/Engine và nhập hàng vào kho Dealer tương ứng")
+    @PatchMapping("/{orderId}/approve")
+    public ResponseEntity<ApiResponse<OrderApproveResponse>> approve(@PathVariable Long orderId) {
+        OrderApproveResponse res = approvalService.approveOrder(orderId, guard.me());
+        return ResponseEntity.ok(ApiResponse.ok(res, "Duyệt đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Xác nhận thanh toán kỳ trả góp", description = "Xác nhận Admin đã nhận thanh toán cho một kỳ trả góp của đơn hàng CONFIRMED")
+    @PostMapping("/{orderId}/installments/{installmentNumber}/confirm")
+    public ResponseEntity<ApiResponse<OrderResponse>> confirmInstallmentPayment(
+            @PathVariable Long orderId,
+            @PathVariable Integer installmentNumber
+    ) {
+        OrderResponse res = paymentService.confirmInstallmentPayment(orderId, installmentNumber, guard.me());
+        return ResponseEntity.ok(ApiResponse.ok(res, "Xác nhận thanh toán kỳ trả góp thành công"));
+    }
+
+    @Operation(summary = "Hủy đơn hàng", description = "Admin hủy đơn hàng khi đơn chưa hoàn tất hoặc chưa giao xe")
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(@PathVariable Long orderId) {
+        OrderResponse res = paymentService.cancelOrder(orderId, guard.me());
+        return ResponseEntity.ok(ApiResponse.ok(res, "Hủy đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Lấy danh sách xe trong đơn hàng", description = "Admin/EVM xem tất cả xe (VehicleInstance) thuộc đơn hàng cụ thể")
+    @GetMapping("/{orderId}/vehicles")
+    public ResponseEntity<ApiResponse<List<VehicleInstanceResponse>>> getVehiclesByOrder(@PathVariable Long orderId) {
+        List<VehicleInstanceResponse> vehicles = adminOrderQueryService.getVehiclesByOrder(orderId, guard.me());
+        return ResponseEntity.ok(ApiResponse.ok(vehicles, "Lấy danh sách xe trong đơn hàng thành công"));
+    }
+
+    @Operation(summary = "Xác nhận giao hàng (Mark as Shipping)", description = "Hãng chuyển đơn CONFIRMED sang SHIPPING khi bắt đầu vận chuyển")
+    @PatchMapping("/{orderId}/shipping")
+    public ResponseEntity<ApiResponse<OrderResponse>> markAsShipping(@PathVariable Long orderId) {
+        User me = guard.me();
+        OrderResponse res = approvalService.markAsShipping(orderId, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Cập nhật trạng thái SHIPPING thành công"));
+    }
+
+    @Operation(
+            summary = "Nhập số tiền dealer đã thanh toán (Trả thẳng)",
+            description = "Admin nhập số tiền dealer thanh toán cho đơn TRẢ THẲNG. "
+                    + "Tự động cập nhật paidAmount, remaining, progress và COMPLETED nếu đủ."
+    )
+    @PostMapping("/{orderId}/manual-payment")
+    public ResponseEntity<ApiResponse<OrderResponse>> manualPayment(
+            @PathVariable Long orderId,
+            @RequestBody ManualPaymentRequest request
+    ) {
+        User me = guard.me();
+        OrderResponse res = paymentService.manualPayment(orderId, request, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Cập nhật thanh toán trả thẳng thành công"));
+    }
+
+    @Operation(
+            summary = "Xác nhận dealer đã thanh toán tiền cọc (Trả góp)",
+            description = "Admin xác nhận dealer đã nộp tiền cọc cho đơn trả góp. "
+                    + "Cập nhật tiến độ thanh toán và có thể chuyển đơn sang INSTALLMENT_ACTIVE."
+    )
+    @PostMapping("/{orderId}/confirm-deposit")
+    public ResponseEntity<ApiResponse<OrderResponse>> confirmDeposit(
+            @PathVariable Long orderId,
+            @RequestBody ConfirmDepositRequest request
+    ) {
+        User me = guard.me();
+        OrderResponse res = paymentService.confirmDeposit(orderId, request, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Xác nhận tiền cọc thành công"));
+    }
+
+    @Operation(
+            summary = "Gắn xe vào đơn hàng",
+            description = "Admin chọn 1 VehicleInstance (AVAILABLE) để gắn vào đơn hàng PENDING"
+    )
+    @PatchMapping("/{orderId}/attach-vehicle/{vehicleId}")
+    public ResponseEntity<ApiResponse<VehicleInstanceResponse>> attachVehicleToOrder(
+            @PathVariable Long orderId,
+            @PathVariable Long vehicleId
+    ) {
+        User me = guard.me();
+        VehicleInstanceResponse res = approvalService.attachVehicleToOrder(orderId, vehicleId, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Gắn xe vào đơn hàng thành công"));
+    }
+
+
+}

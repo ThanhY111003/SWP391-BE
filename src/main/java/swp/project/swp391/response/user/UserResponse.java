@@ -14,8 +14,10 @@ public class UserResponse {
     private String email;
     private String fullName;
     private Boolean active;
-    private Boolean verified;
     private Set<String> roles;
+
+    private Long dealerId;
+    private String dealerName;
 
     public static UserResponse fromEntity(User user) {
         return UserResponse.builder()
@@ -23,8 +25,11 @@ public class UserResponse {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .active(user.getIsActive())
-                .verified(user.getIsVerified())
-                .roles(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toSet()))
+                .roles(user.getRoles().stream()
+                        .map(r -> r.getName())
+                        .collect(Collectors.toSet()))
+                .dealerId(user.getDealer() != null ? user.getDealer().getId() : null)
+                .dealerName(user.getDealer() != null ? user.getDealer().getName() : null)
                 .build();
     }
 }

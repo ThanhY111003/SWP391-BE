@@ -1,18 +1,18 @@
 package swp.project.swp391.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "dealers")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Dealer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,7 +21,10 @@ public class Dealer {
     @Column(nullable = false)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(unique = true, nullable = false)
+    private String code;
+
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String address;
 
     @Column(name = "phone_number")
@@ -29,6 +32,16 @@ public class Dealer {
 
     @Column(name = "email")
     private String email;
+
+    @Column(name = "region")
+    @Enumerated(EnumType.STRING)
+    private Region region;
+
+    @Column(name = "current_debt", precision = 15, scale = 2)
+    private BigDecimal currentDebt = BigDecimal.ZERO;
+
+    @Column(name = "available_credit", precision = 15, scale = 2)
+    private BigDecimal availableCredit;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -39,33 +52,49 @@ public class Dealer {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "region")
-    @Enumerated(EnumType.STRING)
-    private Region region;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "level_id", nullable = false)
+    private DealerLevel level;
 
-    // Mối quan hệ với User (Many-to-One)
-    // Mối quan hệ với User (One-to-Many: Một Dealer có nhiều User)
     @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<User> users;
 
-    // Mối quan hệ với Order (One-to-Many)
-    @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Order> orders;
+    @OneToMany(mappedBy = "buyerDealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Order> purchaseOrders;
 
-    // Mối quan hệ với Inventory (One-to-Many)
     @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Inventory> inventories;
+
+    @OneToMany(mappedBy = "currentDealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<VehicleInstance> vehicleInstances;
+
+    @OneToMany(mappedBy = "soldByDealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CustomerVehicle> vehicleSales;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (currentDebt == null) {
+            currentDebt = BigDecimal.ZERO;
+        }
+        calculateAvailableCredit();
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        calculateAvailableCredit();
     }
+
+    private void calculateAvailableCredit() {
+        if (level != null && level.getCreditLimit() != null) {
+            this.availableCredit = level.getCreditLimit().subtract(
+                    currentDebt != null ? currentDebt : BigDecimal.ZERO
+            );
+        }
+    }
+
     public enum Region {
         NORTH,
         CENTRAL,

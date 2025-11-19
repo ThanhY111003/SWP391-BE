@@ -14,5 +14,6 @@ public class LoginResponse {
     private String refreshToken;
     private String message;
     private String roleName;
+    private Boolean mustChangePassword;
     // Thêm trường message để trả về thông báo thành công
 }
