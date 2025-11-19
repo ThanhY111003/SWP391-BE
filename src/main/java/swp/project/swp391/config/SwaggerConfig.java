@@ -18,11 +18,17 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI swaggerOpenAPI() {
-        // 🌐 Cấu hình server (local + ngrok)
+        // 🌐 Production Server (Render)
+        Server productionServer = new Server();
+        productionServer.setUrl("https://swp391-be-y3kc.onrender.com");
+        productionServer.setDescription("Production Server (Render)");
+
+        // 🌐 Ngrok Server (for testing)
         Server ngrokServer = new Server();
         ngrokServer.setUrl("https://deflexed-burdenedly-clemente.ngrok-free.dev");
         ngrokServer.setDescription("Public API for Teacher Test (Ngrok)");
 
+        // 🌐 Local Development Server
         Server localServer = new Server();
         localServer.setUrl("http://localhost:8080");
         localServer.setDescription("Local Development");
@@ -48,6 +54,6 @@ public class SwaggerConfig {
                                 .url("https://opensource.org/licenses/MIT")))
                 .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
                 .components(new Components().addSecuritySchemes("Bearer Authentication", bearerAuth))
-                .servers(List.of(ngrokServer, localServer));
+                .servers(List.of(productionServer, ngrokServer, localServer)); // ⭐ Thêm productionServer vào đầu!
     }
 }
