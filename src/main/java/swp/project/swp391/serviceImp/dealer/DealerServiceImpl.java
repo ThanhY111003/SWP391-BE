@@ -131,17 +131,17 @@ public class DealerServiceImpl implements DealerService {
 
         boolean isDealer = currentUser.getDealer() != null;
 
-        // ============================
-        // 1) Nếu là Dealer role → CHỈ trả dealer của chính mình
-        // ============================
+        // 1) Dealer tự xem dealer của mình
         if (isDealer) {
-            Dealer myDealer = currentUser.getDealer();  // Dealer gắn trong user
-            return DealerDetailResponse.fromEntity(myDealer);
+            Long myDealerId = currentUser.getDealer().getId(); // luôn có, không lazy
+
+            Dealer dealer = dealerRepository.findById(myDealerId)
+                    .orElseThrow(() -> new BaseException(ErrorHandler.DEALER_NOT_FOUND));
+
+            return DealerDetailResponse.fromEntity(dealer);
         }
 
-        // ============================
-        // 2) Nếu là hãng (ADMIN / EVM_STAFF) → được xem bất kỳ đại lý nào
-        // ============================
+        // 2) Hãng (Admin/EVM-staff)
         guard.require(guard.has(currentUser, "dealer.read"));
 
         Dealer dealer = dealerRepository.findById(dealerId)
@@ -149,6 +149,7 @@ public class DealerServiceImpl implements DealerService {
 
         return DealerDetailResponse.fromEntity(dealer);
     }
+
 
 
     @Override
