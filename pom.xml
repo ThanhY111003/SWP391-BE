@@ -35,11 +35,11 @@
 		</dependency>
 
 		<!-- SQL Server driver -->
-		<dependency>
-			<groupId>com.microsoft.sqlserver</groupId>
-			<artifactId>mssql-jdbc</artifactId>
-			<version>12.6.1.jre11</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>com.microsoft.sqlserver</groupId>-->
+<!--			<artifactId>mssql-jdbc</artifactId>-->
+<!--			<version>12.6.1.jre11</version>-->
+<!--		</dependency>-->
 
 		<!-- DevTools -->
 		<dependency>
