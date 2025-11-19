@@ -41,7 +41,8 @@ public class Order {
     @Column(name = "full_payment_date")
     private LocalDate fullPaymentDate; // Ngày thanh toán đầy đủ
 
-    @Column(name = "payment_notes", columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column
     private String paymentNotes;
 
     @Column(name = "is_installment", nullable = false)
@@ -58,7 +59,8 @@ public class Order {
     @Column(name = "actual_delivery_date")
     private LocalDate actualDeliveryDate;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column
     private String notes;
 
     @Column(name = "manual_paid_amount", precision = 15, scale = 2)

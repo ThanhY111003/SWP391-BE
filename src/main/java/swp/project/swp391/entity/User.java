@@ -54,7 +54,8 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column
     private String address;
 
 

@@ -44,10 +44,12 @@ public class Customer {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column
     private String address;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Lob
+    @Column
     private String notes;
 
     /** Trạng thái hoạt động của khách hàng */

@@ -25,9 +25,8 @@ public class VehicleModel {
     @Column(name = "model_code", unique = true, nullable = false)
     private String modelCode;
 
-    @Column(columnDefinition = "NVARCHAR(MAX)")
-// hoặc chỉ @Column để Hibernate tự map
-
+    @Lob
+    @Column
     private String description;
 
     @Column(name = "brand")
