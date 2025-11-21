@@ -4,8 +4,9 @@ import com.cloudinary.Cloudinary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import swp.project.swp391.exception.BaseException;
 import swp.project.swp391.service.CloudinaryService;
-
+import swp.project.swp391.constant.ErrorHandler;
 import java.util.Map;
 
 @Service
@@ -21,10 +22,13 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                     file.getBytes(),
                     Map.of("folder", "swp391")
             );
-
             return upload.get("secure_url").toString();
+
         } catch (Exception e) {
-            throw new RuntimeException("Upload ảnh thất bại!", e);
+            throw new BaseException(
+                    ErrorHandler. INTERNAL_ERROR,
+                    "Upload ảnh thất bại!"
+            );
         }
     }
 
@@ -32,8 +36,13 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     public void deleteImage(String publicId) {
         try {
             cloudinary.uploader().destroy(publicId, Map.of());
+
         } catch (Exception e) {
-            throw new RuntimeException("Xoá ảnh thất bại!", e);
+            throw new BaseException(
+                    ErrorHandler. INTERNAL_ERROR,
+                    "Xoá ảnh thất bại!"
+            );
         }
     }
 }
+
