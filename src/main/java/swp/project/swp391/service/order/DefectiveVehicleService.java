@@ -12,4 +12,6 @@ public interface DefectiveVehicleService {
     DefectiveVehicleReportResponse approveReport(Long reportId, User approver);
     DefectiveVehicleReportResponse completeRepair(Long reportId, User currentUser);
     RepairedVehicleResponse confirmRepairedVehicle(Long orderId, User dealerUser);
+    DefectiveVehicleReportResponse cancelReportByDealer(Long reportId, User dealerUser);
+    DefectiveVehicleReportResponse rejectReport(Long reportId, User adminUser);
 }

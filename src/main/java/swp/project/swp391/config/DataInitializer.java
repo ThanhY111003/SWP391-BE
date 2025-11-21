@@ -138,6 +138,8 @@ public class DataInitializer implements CommandLineRunner {
                 {"order", "read_vehicle", "Xem xe trong đơn hàng dành cho đại lý", "Xem danh sách xe trong đơn hàng dành cho đại lý"},
                 {"defect", "approve", "Phê duyệt báo cáo xe lỗi", "Phê duyệt báo cáo xe lỗi từ đại lý"},
                 {"defect", "read", "Xem báo cáo xe lỗi", "Xem danh sách báo cáo xe lỗi"},
+                {"defect", "reject", "Từ chối báo cáo xe lỗi", "Từ chối báo cáo xe lỗi từ đại lý"},
+                {"vehicle", "cancel_defect", "Huỷ báo cáo xe lỗi trong đơn hàng", "Huỷ báo cáo xe lỗi trong đơn hàng"},
                 {"defect", "repair_complete", "Xác nhận sửa xong xe lỗi", "Xác nhận đã sửa xong xe lỗi"},
                 {"vehicle", "receive_repair", "Xác nhận nhận lại xe sau sửa chữa", "Xác nhận nhận lại xe sau khi sửa chữa xong"},
                 {"order", "attach_vehicle", "gắn xe cho đơn hàng", "gắn xe cụ thể cho đơn hàng"},

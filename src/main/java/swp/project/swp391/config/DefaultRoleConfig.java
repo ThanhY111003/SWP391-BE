@@ -22,7 +22,7 @@ public class DefaultRoleConfig {
                     "vehicleModelColor.create","vehicleModelColor.update","vehicleModelColor.delete",
                     "order.approve","order.update_payment","order.read_EVM","order.read_all_EVM","order.cancel_EVM","order.ship","order.read_vehicle_EVM","defect.approve","order.attach_vehicle",
                     "order.manual_pay","order.deposit_confirm",
-                    "defect.read","defect.repair_complete",
+                    "defect.read","defect.repair_complete","defect.reject",
                     "dealer.create","dealer.read","dealer.update","dealer.read.all","dealer.inactive","dealer.reactivate",
                     "dealerLevel.read","dealerLevel.create","dealerLevel.update","dealerLevel.delete",
                     "customer.create","customer.read","customer.update","customer.activate","customer.deactivate",
@@ -33,7 +33,7 @@ public class DefaultRoleConfig {
             "DEALER_MANAGER", List.of(
                     "user.create","user.read","user.update","user.inactive","user.reactivate",
                     "order.create","order.read","order.read_all","order.cancel","order.read_vehicle","order.receive","vehicle.report_defect",
-                    "defect.read","vehicle.receive_repair","warranty.cancel",
+                    "defect.read","vehicle.receive_repair","warranty.cancel","vehicle.cancel_defect",
                     "inventory.read",
                     "dealer.read",
                     "customer.create","customer.read","customer.update",
@@ -46,7 +46,7 @@ public class DefaultRoleConfig {
             "DEALER_STAFF", List.of(
                     "user.read","user.update",
                     "order.create","order.read","order.read_all","order.cancel","order.read_vehicle","order.receive","vehicle.report_defect",
-                    "defect.read","vehicle.receive_repair","warranty.cancel",
+                    "defect.read","vehicle.receive_repair","warranty.cancel","vehicle.cancel_defect",
                     "inventory.read",
                     "dealer.read",
                     "customer.create","customer.read","customer.update",

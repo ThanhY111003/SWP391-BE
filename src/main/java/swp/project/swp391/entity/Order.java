@@ -199,6 +199,7 @@ public class Order {
         PARTIALLY_DELIVERED, // Có xe lỗi, đang chờ xử lý
         COMPLETED,           // Hoàn tất (trả góp xong hoặc trả thẳng)
         CANCELLED,
-        PAID
+        PAID,
+        DEFECT_REJECTED
     }
 }

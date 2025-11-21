@@ -67,5 +67,22 @@ public class DealerDefectiveVehicleController {
 
         return ResponseEntity.ok(ApiResponse.ok(response, "Xác nhận xe đã sửa xong thành công"));
     }
+
+    // ======================= HUỶ BÁO CÁO XE LỖI =======================
+    @Operation(
+            summary = "Hủy báo cáo xe lỗi",
+            description = "Dealer hủy báo cáo khi phát hiện xe không lỗi nữa"
+    )
+    @DeleteMapping("/reports/{reportId}/cancel")
+    public ResponseEntity<ApiResponse<DefectiveVehicleReportResponse>> cancelReport(
+            @PathVariable Long reportId
+    ) {
+        User me = guard.me();
+        DefectiveVehicleReportResponse response =
+                defectiveVehicleService.cancelReportByDealer(reportId, me);
+
+        return ResponseEntity.ok(ApiResponse.ok(response, "Hủy báo cáo xe lỗi thành công"));
+    }
+
 }
 

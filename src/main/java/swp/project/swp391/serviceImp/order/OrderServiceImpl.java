@@ -79,10 +79,35 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // Validation
-        if (order.getStatus() != Order.OrderStatus.SHIPPING) {
+
+        // ❌ Cấm confirm khi đang báo lỗi
+        if (order.getStatus() == Order.OrderStatus.PARTIALLY_DELIVERED) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
-                    "Chỉ đơn SHIPPING mới có thể xác nhận đã nhận");
+                    "Đơn đang báo cáo lỗi, không thể xác nhận đã nhận");
         }
+
+        // ❌ Đơn đã bị huỷ
+        if (order.getStatus() == Order.OrderStatus.CANCELLED) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Đơn đã bị huỷ, không thể xác nhận");
+        }
+
+        // ❌ Đơn đã hoàn tất trước đó
+        if (order.getStatus() == Order.OrderStatus.COMPLETED ||
+                order.getStatus() == Order.OrderStatus.INSTALLMENT_ACTIVE) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Đơn đã hoàn tất, không thể xác nhận lại");
+        }
+
+        // ❌ Chỉ cho phép confirm nếu SHIPPING hoặc DEFECT_REJECTED
+        if (order.getStatus() != Order.OrderStatus.SHIPPING &&
+                order.getStatus() != Order.OrderStatus.DEFECT_REJECTED) {
+
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Đơn không ở trạng thái hợp lệ để xác nhận đã nhận");
+        }
+
+
         if (!Objects.equals(order.getBuyerDealer().getId(), dealer.getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN,
                     "Không thể xác nhận đơn của đại lý khác");
@@ -108,17 +133,14 @@ public class OrderServiceImpl implements OrderService {
             v.setCurrentDealer(dealer);
             v.setStatus(VehicleInstance.VehicleStatus.IN_STOCK);
 
-            // ✅ Dùng dealerLevel đã load (không gọi dealer.getLevel() nữa)
-            VehiclePrice vehiclePrice = vehiclePriceRepository
-                    .findActiveByVehicleModelColorAndDealerLevel(
-                            v.getVehicleModelColor(),
-                            dealerLevel,  // ✅ FIXED
-                            LocalDate.now()
-                    )
-                    .orElseThrow(() -> new BaseException(ErrorHandler.INVALID_REQUEST,
-                            "Không tìm thấy giá bán cho dealer level này với modelColor của xe."));
+            BigDecimal finalPrice = getVehiclePriceForDealer(
+                    v.getVehicleModelColor().getVehicleModel(),
+                    v.getVehicleModelColor(),
+                    dealerLevel
+            );
 
-            v.setCurrentValue(vehiclePrice.getWholesalePrice());
+            v.setCurrentValue(finalPrice);
+
             vehicleRepo.save(v);
 
             // Tìm hoặc tạo inventory

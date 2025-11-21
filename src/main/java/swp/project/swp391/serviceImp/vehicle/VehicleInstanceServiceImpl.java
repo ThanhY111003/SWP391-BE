@@ -219,19 +219,24 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
             throw new BaseException(ErrorHandler.INVALID_WARRANTY_PERIOD);
         }
 
-        BigDecimal baseValue = vehicle.getCurrentValue() != null
-                ? vehicle.getCurrentValue()
-                : vehicle.getVehicleModel().getManufacturerPrice();
+        // Lấy đơn hàng của xe để biết dealer đã mua giá bao nhiêu
+        Order order = vehicle.getOrder();
+        if (order == null) {
+            throw new BaseException(ErrorHandler.ORDER_NOT_FOUND);
+        }
 
+        // Giá dealer mua = giá trong đơn → cố định, không đổi
+        BigDecimal baseValue = order.getTotalAmount();
+
+        // Nếu người dùng không truyền salePrice thì mặc định = baseValue
         BigDecimal salePrice = req.getSalePrice() != null ? req.getSalePrice() : baseValue;
 
-        // ✅ Kiểm tra điều kiện salePrice nằm trong khoảng [currentValue, currentValue * 1.2]
-        if (baseValue != null) {
-            BigDecimal maxAllowed = baseValue.multiply(BigDecimal.valueOf(1.2));
-            if (salePrice.compareTo(baseValue) < 0 || salePrice.compareTo(maxAllowed) > 0) {
-                throw new BaseException(ErrorHandler.INVALID_SALE_PRICE_RANGE);
-            }
+        // Giới hạn: salePrice thuộc [baseValue, baseValue * 1.2]
+        BigDecimal maxAllowed = baseValue.multiply(BigDecimal.valueOf(1.2));
+        if (salePrice.compareTo(baseValue) < 0 || salePrice.compareTo(maxAllowed) > 0) {
+            throw new BaseException(ErrorHandler.INVALID_SALE_PRICE_RANGE);
         }
+
 
         CustomerVehicle record = CustomerVehicle.builder()
                 .vehicleInstance(vehicle)
@@ -264,7 +269,6 @@ public class VehicleInstanceServiceImpl implements VehicleInstanceService {
 
         return CustomerVehicleResponse.fromEntity(record);
     }
-
 
 
     // --------------------------------------------------------
