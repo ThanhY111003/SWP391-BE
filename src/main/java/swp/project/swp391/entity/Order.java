@@ -41,7 +41,6 @@ public class Order {
     @Column(name = "full_payment_date")
     private LocalDate fullPaymentDate; // Ngày thanh toán đầy đủ
 
-    @Lob
     @Column
     private String paymentNotes;
 
@@ -59,7 +58,6 @@ public class Order {
     @Column(name = "actual_delivery_date")
     private LocalDate actualDeliveryDate;
 
-    @Lob
     @Column
     private String notes;
 

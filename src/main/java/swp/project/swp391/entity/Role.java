@@ -27,7 +27,6 @@ Role {
     @Column(name = "display_name")
     private String displayName;
 
-    @Lob
     @Column
     private String description;
 

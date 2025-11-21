@@ -40,7 +40,6 @@ public class DealerLevel {
     @Column(name = "max_installment_months")
     private Integer maxInstallmentMonths; // Số tháng trả góp tối đa cho mỗi level
 
-    @Lob
     @Column
     private String description;
 

@@ -32,7 +32,6 @@ public class CustomerVehicle {
     @Column(name = "customer_warranty_end_date")
     private LocalDate customerWarrantyEndDate;
 
-    @Lob
     @Column
     private String notes;
 

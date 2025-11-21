@@ -44,11 +44,9 @@ public class Customer {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Lob
     @Column
     private String address;
 
-    @Lob
     @Column
     private String notes;
 

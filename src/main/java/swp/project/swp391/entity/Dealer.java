@@ -24,7 +24,6 @@ public class Dealer {
     @Column(unique = true, nullable = false)
     private String code;
 
-    @Lob
     @Column
     private String address;
 

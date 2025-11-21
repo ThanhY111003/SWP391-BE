@@ -25,7 +25,6 @@ public class VehicleModel {
     @Column(name = "model_code", unique = true, nullable = false)
     private String modelCode;
 
-    @Lob
     @Column
     private String description;
 

@@ -54,7 +54,6 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Lob
     @Column
     private String address;
 
