@@ -45,11 +45,16 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         if (!Objects.equals(order.getBuyerDealer().getId(), reporter.getDealer().getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN, "Đơn hàng không thuộc đại lý của bạn");
         }
-        // ❗ Chỉ đơn SHIPPING mới được báo lỗi
-        if (order.getStatus() != Order.OrderStatus.SHIPPING) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST,
-                    "Chỉ được báo lỗi khi đơn hàng đang trong trạng thái SHIPPING");
+        // ❗ Chỉ đơn SHIPPING hoặc DEFECT_REJECTED mới được báo lỗi
+        if (order.getStatus() != Order.OrderStatus.SHIPPING &&
+                order.getStatus() != Order.OrderStatus.DEFECT_REJECTED) {
+
+            throw new BaseException(
+                    ErrorHandler.INVALID_REQUEST,
+                    "Chỉ được báo lỗi khi đơn ở trạng thái SHIPPING hoặc DEFECT_REJECTED"
+            );
         }
+
 
 
         // Lấy xe duy nhất trong đơn
