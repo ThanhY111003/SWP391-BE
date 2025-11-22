@@ -79,7 +79,7 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        // ❗ Chỉ huỷ được khi đơn ở PARTIALLY_DELIVERED
+        // ❗ Chỉ huỷ khi đơn PARTIALLY_DELIVERED
         if (order.getStatus() != Order.OrderStatus.PARTIALLY_DELIVERED) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
                     "Chỉ có thể huỷ báo cáo khi đơn đang ở trạng thái PARTIALLY_DELIVERED");
@@ -91,23 +91,22 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
                     "Không thể huỷ báo cáo của đơn thuộc đại lý khác");
         }
 
-        // ❗ Lấy report theo vehicle từ order
         VehicleInstance vehicle = order.getAssignedVehicle();
         if (vehicle == null) {
             throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED,
-                    "Đơn hàng chưa được gắn xe");
+                    "Đơn hàng chưa gắn xe");
         }
 
         DefectiveVehicleReport report = reportRepo.findByVehicleInstanceId(vehicle.getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
 
-        // ❗ Không được huỷ khi admin đã approve
+        // ❗ Dealer KHÔNG ĐƯỢC HUỶ nếu report đã được approve
         if (Boolean.TRUE.equals(report.getIsApproved())) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
-                    "Không thể huỷ báo cáo đã được duyệt");
+                    "Không thể huỷ báo cáo đã được duyệt bởi hãng");
         }
 
-        // 🔥 HUỶ báo cáo → order trở về DEFECT_REJECTED
+        // 🔥 Huỷ báo cáo
         order.setStatus(Order.OrderStatus.DEFECT_REJECTED);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepo.save(order);
@@ -116,6 +115,7 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
 
         return DefectiveVehicleReportResponse.fromEntity(report);
     }
+
 
 
     @Override
@@ -127,7 +127,7 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        // ❗ Chỉ từ chối khi đơn ở PARTIALLY_DELIVERED
+        // ❗ Chỉ reject khi đơn PARTIALLY_DELIVERED
         if (order.getStatus() != Order.OrderStatus.PARTIALLY_DELIVERED) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
                     "Chỉ có thể từ chối báo cáo khi đơn đang ở trạng thái PARTIALLY_DELIVERED");
@@ -136,29 +136,28 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         VehicleInstance vehicle = order.getAssignedVehicle();
         if (vehicle == null) {
             throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED,
-                    "Đơn hàng chưa được gắn xe");
+                    "Đơn hàng chưa gắn xe");
         }
 
         DefectiveVehicleReport report = reportRepo.findByVehicleInstanceId(vehicle.getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
 
-        // ❗ Không thể từ chối nếu report đã được approve
-        if (Boolean.TRUE.equals(report.getIsApproved())) {
+        // ❗ Admin KHÔNG được reject khi đã sửa xong
+        if (Boolean.TRUE.equals(report.getIsRepairCompleted())) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
-                    "Không thể từ chối báo cáo đã duyệt");
+                    "Không thể từ chối báo cáo khi xe đã sửa hoàn tất");
         }
 
-        // 🔥 TỪ CHỐI → order về trạng thái DEFECT_REJECTED
+
+        // 🔥 Reject report
         order.setStatus(Order.OrderStatus.DEFECT_REJECTED);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepo.save(order);
 
-        // ❗ Có thể delete hoặc giữ lại record — bạn đang delete
         reportRepo.delete(report);
 
         return DefectiveVehicleReportResponse.fromEntity(report);
     }
-
 
 
 
@@ -202,7 +201,7 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         report.setReportedAt(LocalDateTime.now());
         reportRepo.save(report);
 
-        // ✅ Xe chuyển sang REPAIRING
+        // ✅ Xe chuyển sang PARTIALLY_DELIVERED
         vehicle.setStatus(VehicleInstance.VehicleStatus.PARTIALLY_DELIVERED);
         vehicleRepo.save(vehicle);
 
