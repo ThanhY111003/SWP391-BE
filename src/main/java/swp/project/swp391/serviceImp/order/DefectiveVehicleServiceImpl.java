@@ -174,7 +174,7 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         reportRepo.save(report);
 
         // ✅ Xe chuyển sang REPAIRING
-        vehicle.setStatus(VehicleInstance.VehicleStatus.REPAIRING);
+        vehicle.setStatus(VehicleInstance.VehicleStatus.PARTIALLY_DELIVERED);
         vehicleRepo.save(vehicle);
 
         // ✅ Nếu đơn đang SHIPPING → chuyển sang PARTIALLY_DELIVERED

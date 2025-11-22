@@ -82,6 +82,7 @@ public class VehicleInstance {
         RESERVED,
         REPAIRING,
         SHIPPING,
-        SOLD
+        SOLD,
+        PARTIALLY_DELIVERED
     }
 }
