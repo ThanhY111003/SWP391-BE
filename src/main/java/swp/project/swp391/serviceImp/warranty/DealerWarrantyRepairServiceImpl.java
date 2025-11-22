@@ -39,18 +39,18 @@ public class DealerWarrantyRepairServiceImpl implements DealerWarrantyRepairServ
             throw new BaseException(ErrorHandler.FORBIDDEN, "Người dùng hiện tại không thuộc dealer nào");
         }
 
-        // ✅ Validate quyền sở hữu xe
+        // Xe phải thuộc đại lý
         if (vehicle.getCurrentDealer() == null || !Objects.equals(vehicle.getCurrentDealer().getId(), dealer.getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN, "Xe này không thuộc quyền quản lý của dealer hiện tại");
         }
 
-        // ✅ Chỉ xe IN_STOCK hoặc SOLD mới được gửi yêu cầu
+        // Chỉ IN_STOCK hoặc SOLD được gửi yêu cầu
         if (vehicle.getStatus() != VehicleInstance.VehicleStatus.IN_STOCK &&
                 vehicle.getStatus() != VehicleInstance.VehicleStatus.SOLD) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST, "Chỉ xe trong kho hoặc đã bán mới được yêu cầu bảo hành");
         }
 
-        // ✅ Nếu xe đã bán thì phải còn trong thời gian bảo hành
+        // Kiểm tra còn hạn bảo hành
         if (vehicle.getCustomerVehicle() != null) {
             LocalDate now = LocalDate.now();
             LocalDate start = vehicle.getCustomerVehicle().getCustomerWarrantyStartDate();
@@ -60,7 +60,7 @@ public class DealerWarrantyRepairServiceImpl implements DealerWarrantyRepairServ
             }
         }
 
-        // ✅ Kiểm tra không có yêu cầu đang mở
+        // Kiểm tra không có request đang mở
         boolean hasOpenRequest = reportRepo.existsByVehicleInstanceIdAndStatusIn(
                 vehicleId,
                 List.of(
@@ -73,7 +73,7 @@ public class DealerWarrantyRepairServiceImpl implements DealerWarrantyRepairServ
             throw new BaseException(ErrorHandler.INVALID_REQUEST, "Xe này đang có yêu cầu bảo hành đang xử lý");
         }
 
-        // ✅ Tạo yêu cầu mới
+        // Tạo request mới — KHÔNG đổi trạng thái xe tại đây
         DealerWarrantyRepairReport report = DealerWarrantyRepairReport.builder()
                 .vehicleInstance(vehicle)
                 .dealer(dealer)
@@ -82,12 +82,9 @@ public class DealerWarrantyRepairServiceImpl implements DealerWarrantyRepairServ
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        // ✅ Xe chuyển sang REPAIRING
-        vehicle.setStatus(VehicleInstance.VehicleStatus.REPAIRING);
-        vehicleRepo.save(vehicle);
-
         return DealerWarrantyRepairResponse.fromEntity(reportRepo.save(report));
     }
+
 
     // ======================= VIEW MY REQUESTS =========================
     @Override
@@ -118,10 +115,18 @@ public class DealerWarrantyRepairServiceImpl implements DealerWarrantyRepairServ
             throw new BaseException(ErrorHandler.INVALID_REQUEST, "Chỉ có thể duyệt yêu cầu đang ở trạng thái PENDING");
         }
 
+        // CHUYỂN TRẠNG THÁI XE TẠI ĐÂY
+        VehicleInstance vehicle = report.getVehicleInstance();
+        vehicle.setStatus(VehicleInstance.VehicleStatus.REPAIRING);
+        vehicleRepo.save(vehicle);
+
+        // Cập nhật trạng thái yêu cầu
         report.setStatus(DealerWarrantyRepairReport.WarrantyStatus.APPROVED);
         report.setUpdatedAt(LocalDateTime.now());
+
         return DealerWarrantyRepairResponse.fromEntity(reportRepo.save(report));
     }
+
 
     // ======================= REJECT REQUEST =========================
     @Override

@@ -119,7 +119,7 @@ public class OrderServiceImpl implements OrderService {
                     "Đơn hàng chưa được gắn xe");
         }
 
-        if (v.getStatus() == VehicleInstance.VehicleStatus.REPAIRING) {
+        if (v.getStatus() == VehicleInstance.VehicleStatus.PARTIALLY_DELIVERED) {
             throw new BaseException(ErrorHandler.INVALID_REQUEST,
                     "Xe đang sửa chữa, không thể xác nhận đã nhận");
         }
