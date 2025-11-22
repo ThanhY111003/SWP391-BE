@@ -9,4 +9,5 @@ public interface OrderApprovalService {
     OrderApproveResponse approveOrder(Long orderId, User currentUser);
     OrderResponse markAsShipping(Long orderId, User currentUser);
     VehicleInstanceResponse attachVehicleToOrder(Long orderId, Long vehicleId, User currentUser);
+    OrderResponse detachVehicleFromOrder(Long orderId, Long vehicleId, User currentUser);
 }

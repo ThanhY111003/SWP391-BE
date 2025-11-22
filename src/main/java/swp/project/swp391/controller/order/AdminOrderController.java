@@ -127,5 +127,19 @@ public class AdminOrderController {
         return ResponseEntity.ok(ApiResponse.ok(res, "Gắn xe vào đơn hàng thành công"));
     }
 
+    @Operation(
+            summary = "Gỡ xe ra khỏi đơn hàng",
+            description = "Admin gỡ một VehicleInstance ra khỏi đơn hàng khi xe vẫn còn ở trạng thái AVAILABLE"
+    )
+    @PatchMapping("/{orderId}/detach-vehicle/{vehicleId}")
+    public ResponseEntity<ApiResponse<OrderResponse>> detachVehicleFromOrder(
+            @PathVariable Long orderId,
+            @PathVariable Long vehicleId
+    ) {
+        User me = guard.me();
+        OrderResponse res = approvalService.detachVehicleFromOrder(orderId, vehicleId, me);
+        return ResponseEntity.ok(ApiResponse.ok(res, "Gỡ xe khỏi đơn hàng thành công"));
+    }
+
 
 }

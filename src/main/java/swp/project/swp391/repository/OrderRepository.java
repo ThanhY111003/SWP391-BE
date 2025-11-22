@@ -50,5 +50,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("end") LocalDate end
     );
 
+    @Query("""
+    SELECT o FROM Order o
+    WHERE o.assignedVehicle.id = :vehicleId
+""")
+    Optional<Order> findByAssignedVehicleId(@Param("vehicleId") Long vehicleId);
+
+
 }
 

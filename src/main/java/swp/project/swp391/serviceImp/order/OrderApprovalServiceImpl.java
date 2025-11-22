@@ -136,6 +136,11 @@
                         "Xe phải ở trạng thái AVAILABLE.");
             }
 
+            // ====== CHECK QUAN TRỌNG ======
+            orderRepo.findByAssignedVehicleId(vehicleId).ifPresent(existingOrder -> {
+                throw new BaseException(INVALID_REQUEST,
+                        "Xe này đã được gắn vào đơn hàng khác.");
+            });
 
             // Kiểm tra màu/model phải đúng
             if (!Objects.equals(vehicle.getVehicleModelColor().getId(),
@@ -152,6 +157,50 @@
 
             return VehicleInstanceResponse.fromEntity(vehicle);
         }
+
+        @Override
+        @Transactional
+        public OrderResponse detachVehicleFromOrder(Long orderId, Long vehicleId, User currentUser) {
+
+            guard.require(guard.has(currentUser, "order.attach_vehicle"));
+            // hoặc đổi sang order.detach_vehicle nếu muốn tách quyền
+
+            Order order = orderRepo.findById(orderId)
+                    .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+
+            VehicleInstance vehicle = order.getAssignedVehicle();
+
+            if (vehicle == null) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Đơn hàng này chưa được gắn xe.");
+            }
+
+            // Check xe đúng với xe requested
+            if (!vehicle.getId().equals(vehicleId)) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Xe này không được gắn với đơn hàng này.");
+            }
+
+            // ====== CHECK MỚI BẠN YÊU CẦU ======
+            // Chỉ cho gỡ xe nếu trạng thái xe đang AVAILABLE
+            if (vehicle.getStatus() != VehicleInstance.VehicleStatus.AVAILABLE) {
+                throw new BaseException(INVALID_REQUEST,
+                        "Chỉ gỡ được xe khi trạng thái xe đang là AVAILABLE.");
+            }
+
+            // ===== GỠ XE =====
+            order.setAssignedVehicle(null);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepo.save(order);
+
+            // Xe vẫn ở AVAILABLE (không cần đổi gì)
+            // vehicle.setStatus(VehicleInstance.VehicleStatus.AVAILABLE); // không cần
+            // vehicleRepo.save(vehicle); // không cần
+
+            return OrderResponse.fromEntity(order);
+        }
+
+
 
     }
 
