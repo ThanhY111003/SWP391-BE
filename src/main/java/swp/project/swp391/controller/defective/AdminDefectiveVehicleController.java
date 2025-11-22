@@ -31,18 +31,18 @@ public class AdminDefectiveVehicleController {
     }
 
     @Operation(summary = "Phê duyệt báo cáo xe lỗi", description = "Hãng xác nhận báo cáo xe lỗi là hợp lệ để tiến hành sửa chữa")
-    @PatchMapping("/{reportId}/approve")
-    public ResponseEntity<ApiResponse<DefectiveVehicleReportResponse>> approveReport(@PathVariable Long reportId) {
+    @PatchMapping("/order/{orderId}/approve")
+    public ResponseEntity<ApiResponse<DefectiveVehicleReportResponse>> approveReport(@PathVariable Long orderId) {
         User me = guard.me();
-        DefectiveVehicleReportResponse report = defectiveVehicleService.approveReport(reportId, me);
+        DefectiveVehicleReportResponse report = defectiveVehicleService.approveReport(orderId, me);
         return ResponseEntity.ok(ApiResponse.ok(report, "Phê duyệt báo cáo xe lỗi thành công"));
     }
 
     @Operation(summary = "Xác nhận sửa xe lỗi hoàn tất", description = "Hãng xác nhận xe lỗi đã được sửa xong, chuẩn bị gửi lại dealer")
-    @PatchMapping("/{reportId}/complete-repair")
-    public ResponseEntity<ApiResponse<DefectiveVehicleReportResponse>> completeRepair(@PathVariable Long reportId) {
+    @PatchMapping("/order/{orderId}/complete-repair")
+    public ResponseEntity<ApiResponse<DefectiveVehicleReportResponse>> completeRepair(@PathVariable Long orderId) {
         User me = guard.me();
-        DefectiveVehicleReportResponse report = defectiveVehicleService.completeRepair(reportId, me);
+        DefectiveVehicleReportResponse report = defectiveVehicleService.completeRepair(orderId, me);
         return ResponseEntity.ok(ApiResponse.ok(report, "Xác nhận sửa xe lỗi hoàn tất"));
     }
 

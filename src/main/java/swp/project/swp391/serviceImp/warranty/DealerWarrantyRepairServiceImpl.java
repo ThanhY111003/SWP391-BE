@@ -53,11 +53,11 @@ public class DealerWarrantyRepairServiceImpl implements DealerWarrantyRepairServ
         // Kiểm tra còn hạn bảo hành
         if (vehicle.getCustomerVehicle() != null) {
             LocalDate now = LocalDate.now();
-            LocalDate start = vehicle.getCustomerVehicle().getCustomerWarrantyStartDate();
             LocalDate end = vehicle.getCustomerVehicle().getCustomerWarrantyEndDate();
-            if (start != null && end != null && (now.isBefore(start) || now.isAfter(end))) {
+            if (end != null && now.isAfter(end)) {
                 throw new BaseException(ErrorHandler.INVALID_REQUEST, "Xe đã hết thời hạn bảo hành");
             }
+
         }
 
         // Kiểm tra không có request đang mở

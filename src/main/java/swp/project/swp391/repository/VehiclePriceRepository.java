@@ -45,27 +45,36 @@ public interface VehiclePriceRepository extends JpaRepository<VehiclePrice, Long
                                        @Param("startDate") LocalDate startDate,
                                        @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT CASE WHEN COUNT(vp) > 0 THEN true ELSE false END FROM VehiclePrice vp " +
-            "WHERE vp.vehicleModelColor = :vehicleModelColor " +
-            "AND vp.dealerLevel = :dealerLevel " +
-            "AND (vp.effectiveTo IS NULL OR vp.effectiveTo >= :effectiveFrom) " +
-            "AND (:effectiveTo IS NULL OR vp.effectiveFrom <= :effectiveTo)")
-    boolean existsByOverlap(@Param("vehicleModelColor") VehicleModelColor vehicleModelColor,
-                            @Param("dealerLevel") DealerLevel dealerLevel,
-                            @Param("effectiveFrom") LocalDate effectiveFrom,
-                            @Param("effectiveTo") LocalDate effectiveTo);
+    @Query("""
+    SELECT COUNT(vp) > 0 FROM VehiclePrice vp
+    WHERE vp.vehicleModelColor = :vehicleModelColor
+      AND vp.dealerLevel = :dealerLevel
+      AND vp.effectiveFrom <= COALESCE(:effectiveTo, vp.effectiveTo)
+      AND COALESCE(vp.effectiveTo, :effectiveTo) >= :effectiveFrom
+""")
+    boolean existsByOverlap(
+            @Param("vehicleModelColor") VehicleModelColor vehicleModelColor,
+            @Param("dealerLevel") DealerLevel dealerLevel,
+            @Param("effectiveFrom") LocalDate effectiveFrom,
+            @Param("effectiveTo") LocalDate effectiveTo
+    );
 
-    @Query("SELECT CASE WHEN COUNT(vp) > 0 THEN true ELSE false END FROM VehiclePrice vp " +
-            "WHERE vp.id <> :id " +
-            "AND vp.vehicleModelColor = :vehicleModelColor " +
-            "AND vp.dealerLevel = :dealerLevel " +
-            "AND (vp.effectiveTo IS NULL OR vp.effectiveTo >= :effectiveFrom) " +
-            "AND (:effectiveTo IS NULL OR vp.effectiveFrom <= :effectiveTo)")
-    boolean existsByOverlapExcludeId(@Param("id") Long id,
-                                     @Param("vehicleModelColor") VehicleModelColor vehicleModelColor,
-                                     @Param("dealerLevel") DealerLevel dealerLevel,
-                                     @Param("effectiveFrom") LocalDate effectiveFrom,
-                                     @Param("effectiveTo") LocalDate effectiveTo);
+
+    @Query("""
+    SELECT COUNT(vp) > 0 FROM VehiclePrice vp
+    WHERE vp.id <> :id
+      AND vp.vehicleModelColor = :vehicleModelColor
+      AND vp.dealerLevel = :dealerLevel
+      AND vp.effectiveFrom <= COALESCE(:effectiveTo, vp.effectiveTo)
+      AND COALESCE(vp.effectiveTo, :effectiveTo) >= :effectiveFrom
+""")
+    boolean existsByOverlapExcludeId(
+            @Param("id") Long id,
+            @Param("vehicleModelColor") VehicleModelColor vehicleModelColor,
+            @Param("dealerLevel") DealerLevel dealerLevel,
+            @Param("effectiveFrom") LocalDate effectiveFrom,
+            @Param("effectiveTo") LocalDate effectiveTo
+    );
 
 
 }

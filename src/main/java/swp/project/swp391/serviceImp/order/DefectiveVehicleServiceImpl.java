@@ -45,6 +45,12 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         if (!Objects.equals(order.getBuyerDealer().getId(), reporter.getDealer().getId())) {
             throw new BaseException(ErrorHandler.FORBIDDEN, "Đơn hàng không thuộc đại lý của bạn");
         }
+        // ❗ Chỉ đơn SHIPPING mới được báo lỗi
+        if (order.getStatus() != Order.OrderStatus.SHIPPING) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Chỉ được báo lỗi khi đơn hàng đang trong trạng thái SHIPPING");
+        }
+
 
         // Lấy xe duy nhất trong đơn
         VehicleInstance vehicle = order.getAssignedVehicle();
@@ -187,28 +193,34 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
 
     @Override
     @Transactional
-    public DefectiveVehicleReportResponse approveReport(Long reportId, User currentUser) {
+    public DefectiveVehicleReportResponse approveReport(Long orderId, User currentUser) {
+
         guard.require(guard.has(currentUser, "defect.approve"));
 
-        DefectiveVehicleReport report = reportRepo.findById(reportId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
+        // Tìm order
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        VehicleInstance vehicle = report.getVehicleInstance();
-        Order order = vehicle.getOrder();
-        if (order == null) {
-            throw new BaseException(ErrorHandler.ORDER_NOT_FOUND);
+        // Lấy xe từ order
+        VehicleInstance vehicle = order.getAssignedVehicle();
+        if (vehicle == null) {
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED, "Đơn hàng chưa gắn xe");
         }
 
+        // Tìm report theo vehicleId
+        DefectiveVehicleReport report = reportRepo.findByVehicleInstanceId(vehicle.getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
 
+        // Approve
         report.setIsApproved(true);
         report.setReportedAt(LocalDateTime.now());
         reportRepo.save(report);
 
-        // ✅ Xe chuyển sang PARTIALLY_DELIVERED
+        // Cập nhật xe
         vehicle.setStatus(VehicleInstance.VehicleStatus.PARTIALLY_DELIVERED);
         vehicleRepo.save(vehicle);
 
-        // ✅ Nếu đơn đang SHIPPING → chuyển sang PARTIALLY_DELIVERED
+        // Nếu đơn đang shipping thì đổi sang PARTIALLY_DELIVERED
         if (order.getStatus() == Order.OrderStatus.SHIPPING) {
             order.setStatus(Order.OrderStatus.PARTIALLY_DELIVERED);
             orderRepo.save(order);
@@ -217,32 +229,44 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         return DefectiveVehicleReportResponse.fromEntity(report);
     }
 
+
     @Override
     @Transactional
-    public DefectiveVehicleReportResponse completeRepair(Long reportId, User currentUser) {
+    public DefectiveVehicleReportResponse completeRepair(Long orderId, User currentUser) {
+
         guard.require(guard.has(currentUser, "defect.repair_complete"));
 
-        DefectiveVehicleReport report = reportRepo.findById(reportId)
+        // Tìm order
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+
+        VehicleInstance vehicle = order.getAssignedVehicle();
+        if (vehicle == null) {
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED, "Đơn hàng chưa gắn xe");
+        }
+
+        // Tìm report theo vehicleId
+        DefectiveVehicleReport report = reportRepo.findByVehicleInstanceId(vehicle.getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
 
         if (!Boolean.TRUE.equals(report.getIsApproved())) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Chỉ có thể xác nhận sửa xong cho xe đã được duyệt lỗi");
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Chỉ có thể xác nhận sửa xong cho xe đã được duyệt lỗi");
         }
 
-        VehicleInstance vehicle = report.getVehicleInstance();
-
-        // ✅ Xe sửa xong → chuyển sang SHIPPING
+        // Cập nhật xe
         vehicle.setStatus(VehicleInstance.VehicleStatus.SHIPPING);
         vehicle.setCurrentDealer(null);
-        report.setIsRepairCompleted(true);
         vehicleRepo.save(vehicle);
 
-        // Cập nhật lại thời điểm
+        // Cập nhật report
+        report.setIsRepairCompleted(true);
         report.setReportedAt(LocalDateTime.now());
         reportRepo.save(report);
 
         return DefectiveVehicleReportResponse.fromEntity(report);
     }
+
 
     @Override
     @Transactional
