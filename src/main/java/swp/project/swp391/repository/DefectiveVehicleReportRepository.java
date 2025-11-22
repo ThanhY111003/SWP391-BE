@@ -5,12 +5,14 @@ import org.springframework.stereotype.Repository;
 import swp.project.swp391.entity.DefectiveVehicleReport;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DefectiveVehicleReportRepository extends JpaRepository<DefectiveVehicleReport, Long> {
     List<DefectiveVehicleReport> findByVehicleInstanceOrderId(Long orderId);
     boolean existsByVehicleInstanceId(Long vehicleId);
-    // ✅ Kiểm tra xem xe có báo lỗi chưa được duyệt không
+
+    Optional<DefectiveVehicleReport> findByVehicleInstanceId(Long vehicleId);
 
 }
 

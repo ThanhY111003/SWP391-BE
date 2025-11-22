@@ -72,64 +72,93 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
 
     @Override
     @Transactional
-    public DefectiveVehicleReportResponse cancelReportByDealer(Long reportId, User dealerUser) {
+    public DefectiveVehicleReportResponse cancelReportByDealer(Long orderId, User dealerUser) {
 
         guard.require(guard.has(dealerUser, "vehicle.cancel_defect"));
 
-        DefectiveVehicleReport report = reportRepo.findById(reportId)
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
+
+        // ❗ Chỉ huỷ được khi đơn ở PARTIALLY_DELIVERED
+        if (order.getStatus() != Order.OrderStatus.PARTIALLY_DELIVERED) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Chỉ có thể huỷ báo cáo khi đơn đang ở trạng thái PARTIALLY_DELIVERED");
+        }
+
+        // ❗ Chỉ dealer của đơn mới được huỷ
+        if (!Objects.equals(order.getBuyerDealer().getId(), dealerUser.getDealer().getId())) {
+            throw new BaseException(ErrorHandler.FORBIDDEN,
+                    "Không thể huỷ báo cáo của đơn thuộc đại lý khác");
+        }
+
+        // ❗ Lấy report theo vehicle từ order
+        VehicleInstance vehicle = order.getAssignedVehicle();
+        if (vehicle == null) {
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED,
+                    "Đơn hàng chưa được gắn xe");
+        }
+
+        DefectiveVehicleReport report = reportRepo.findByVehicleInstanceId(vehicle.getId())
                 .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
 
-        VehicleInstance vehicle = report.getVehicleInstance();
-        Order order = vehicle.getOrder();
-
-        // Chỉ dealer của đơn mới được huỷ
-        if (!Objects.equals(order.getBuyerDealer().getId(), dealerUser.getDealer().getId())) {
-            throw new BaseException(ErrorHandler.FORBIDDEN, "Không thể huỷ báo cáo của đơn khác đại lý");
-        }
-
-        // Nếu admin duyệt rồi thì không được huỷ
+        // ❗ Không được huỷ khi admin đã approve
         if (Boolean.TRUE.equals(report.getIsApproved())) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Không thể huỷ báo cáo đã được duyệt");
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Không thể huỷ báo cáo đã được duyệt");
         }
 
-        // 🔥 Trả về trạng thái chung
+        // 🔥 HUỶ báo cáo → order trở về DEFECT_REJECTED
         order.setStatus(Order.OrderStatus.DEFECT_REJECTED);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepo.save(order);
 
-        // Xoá report
         reportRepo.delete(report);
 
         return DefectiveVehicleReportResponse.fromEntity(report);
     }
+
 
     @Override
     @Transactional
-    public DefectiveVehicleReportResponse rejectReport(Long reportId, User adminUser) {
+    public DefectiveVehicleReportResponse rejectReport(Long orderId, User adminUser) {
 
         guard.require(guard.has(adminUser, "defect.reject"));
 
-        DefectiveVehicleReport report = reportRepo.findById(reportId)
-                .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
+        Order order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new BaseException(ErrorHandler.ORDER_NOT_FOUND));
 
-        VehicleInstance vehicle = report.getVehicleInstance();
-        Order order = vehicle.getOrder();
-
-        // Nếu đã approve thì không thể reject
-        if (Boolean.TRUE.equals(report.getIsApproved())) {
-            throw new BaseException(ErrorHandler.INVALID_REQUEST, "Không thể từ chối báo cáo đã duyệt");
+        // ❗ Chỉ từ chối khi đơn ở PARTIALLY_DELIVERED
+        if (order.getStatus() != Order.OrderStatus.PARTIALLY_DELIVERED) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Chỉ có thể từ chối báo cáo khi đơn đang ở trạng thái PARTIALLY_DELIVERED");
         }
 
-        // 🔥 Trả về trạng thái chung
+        VehicleInstance vehicle = order.getAssignedVehicle();
+        if (vehicle == null) {
+            throw new BaseException(ErrorHandler.VEHICLE_NOT_ASSIGNED,
+                    "Đơn hàng chưa được gắn xe");
+        }
+
+        DefectiveVehicleReport report = reportRepo.findByVehicleInstanceId(vehicle.getId())
+                .orElseThrow(() -> new BaseException(ErrorHandler.REPORT_NOT_FOUND));
+
+        // ❗ Không thể từ chối nếu report đã được approve
+        if (Boolean.TRUE.equals(report.getIsApproved())) {
+            throw new BaseException(ErrorHandler.INVALID_REQUEST,
+                    "Không thể từ chối báo cáo đã duyệt");
+        }
+
+        // 🔥 TỪ CHỐI → order về trạng thái DEFECT_REJECTED
         order.setStatus(Order.OrderStatus.DEFECT_REJECTED);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepo.save(order);
 
-        // Xoá report
+        // ❗ Có thể delete hoặc giữ lại record — bạn đang delete
         reportRepo.delete(report);
 
         return DefectiveVehicleReportResponse.fromEntity(report);
     }
+
 
 
 

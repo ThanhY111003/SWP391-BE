@@ -50,15 +50,16 @@ public class AdminDefectiveVehicleController {
             summary = "Từ chối báo cáo xe lỗi",
             description = "Admin từ chối báo cáo lỗi xe khi xác định xe không lỗi"
     )
-    @PatchMapping("/reports/{reportId}/reject")
+    @PatchMapping("/orders/{orderId}/defect/reject")
     public ResponseEntity<ApiResponse<DefectiveVehicleReportResponse>> rejectReport(
-            @PathVariable Long reportId
+            @PathVariable Long orderId
     ) {
         User admin = guard.me();
 
         DefectiveVehicleReportResponse response =
-                defectiveVehicleService.rejectReport(reportId, admin);
+                defectiveVehicleService.rejectReport(orderId, admin);
 
         return ResponseEntity.ok(ApiResponse.ok(response, "Từ chối báo cáo xe lỗi thành công"));
     }
+
 }
