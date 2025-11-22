@@ -13,10 +13,13 @@ import swp.project.swp391.security.RbacGuard;
 import swp.project.swp391.service.order.DefectiveVehicleService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -278,21 +281,19 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
                     "Xe phải ở trạng thái SHIPPING mới có thể xác nhận nhận lại");
         }
 
-        // ✅ Cập nhật xe
+        // ============================================================
+        // ⭐ LẤY GIÁ LẠI Y NHƯ DEALER NHẬN XE LẦN ĐẦU
+        // ============================================================
+        BigDecimal finalPrice = getVehiclePriceForDealer(
+                vehicle.getVehicleModelColor().getVehicleModel(),
+                vehicle.getVehicleModelColor(),
+                dealerLevel
+        );
+
+        // cập nhật giá & trạng thái
         vehicle.setStatus(VehicleInstance.VehicleStatus.IN_STOCK);
         vehicle.setCurrentDealer(dealer);
-
-        // ✅ CẬP NHẬT GIÁ XE (giống như lần đầu nhận xe)
-        VehiclePrice vehiclePrice = vehiclePriceRepository
-                .findActiveByVehicleModelColorAndDealerLevel(
-                        vehicle.getVehicleModelColor(),
-                        dealerLevel,
-                        LocalDate.now()
-                )
-                .orElseThrow(() -> new BaseException(ErrorHandler.INVALID_REQUEST,
-                        "Không tìm thấy giá bán cho dealer level này với modelColor của xe."));
-
-        vehicle.setCurrentValue(vehiclePrice.getWholesalePrice());
+        vehicle.setCurrentValue(finalPrice);
         vehicleRepo.save(vehicle);
 
         // ✅ Cập nhật inventory (không cần check trùng vì xe từ SHIPPING về)
@@ -324,6 +325,58 @@ public class DefectiveVehicleServiceImpl implements DefectiveVehicleService {
         orderRepo.save(order);
 
         return RepairedVehicleResponse.fromEntity(vehicle);
+    }
+
+    private BigDecimal getVehiclePriceForDealer(
+            VehicleModel vehicleModel,
+            VehicleModelColor vehicleColor,
+            DealerLevel dealerLevel) {
+
+        BigDecimal finalPrice;
+
+        Optional<VehiclePrice> vehiclePriceOpt = vehiclePriceRepository
+                .findActiveByVehicleModelColorAndDealerLevel(vehicleColor, dealerLevel, LocalDate.now());
+
+        if (vehiclePriceOpt.isPresent()) {
+            VehiclePrice vp = vehiclePriceOpt.get();
+            finalPrice = vp.getWholesalePrice();
+
+            log.info("[PRICE] Using VehiclePrice for {} - {} (dealer level {}): {}",
+                    vehicleModel.getName(),
+                    vehicleColor.getColor().getColorName(),
+                    dealerLevel.getLevelName(),
+                    finalPrice);
+        } else {
+            BigDecimal modelPrice = vehicleModel.getManufacturerPrice();
+            if (modelPrice == null) {
+                throw new IllegalStateException("Không tìm thấy giá gốc cho model: " + vehicleModel.getName());
+            }
+
+            BigDecimal priceAdjustment = vehicleColor.getPriceAdjustment() != null
+                    ? vehicleColor.getPriceAdjustment()
+                    : BigDecimal.ZERO;
+
+            BigDecimal basePrice = modelPrice.add(priceAdjustment);
+            BigDecimal discount = dealerLevel.getDiscountRate() != null
+                    ? dealerLevel.getDiscountRate()
+                    : BigDecimal.ZERO;
+
+            if (discount.compareTo(BigDecimal.ONE) > 0) {
+                discount = discount.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                log.warn("[PRICE] Auto-converted discountRate > 1 to {} for level {}", discount, dealerLevel.getLevelName());
+            }
+
+            if (discount.compareTo(BigDecimal.ZERO) < 0 || discount.compareTo(BigDecimal.ONE) > 0) {
+                throw new IllegalStateException("Discount rate không hợp lệ: " + discount);
+            }
+
+            finalPrice = basePrice.subtract(basePrice.multiply(discount)).setScale(2, RoundingMode.HALF_UP);
+
+            log.info("[PRICE] Fallback pricing → model={}, adj={}, discount={}%, final={}",
+                    modelPrice, priceAdjustment, discount.multiply(BigDecimal.valueOf(100)), finalPrice);
+        }
+
+        return finalPrice.setScale(2, RoundingMode.HALF_UP);
     }
 
 }
